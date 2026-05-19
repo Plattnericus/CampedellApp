@@ -1,15 +1,85 @@
-# Campedel Speisekarte
+# Campedel App
 
 Digitale Speise- und Weinkarte für den Südtiroler Hofschank **Campedèl** auf der Seiser Alm.  
 Gebaut mit **Expo SDK 54** / React Native. Dreisprachig: Deutsch · Italiano · English.
 
 ---
 
-## Inhalt anpassen
+## Features
+
+- Speise-, Wein- und Getränkekarte mit Detailansicht
+- Volltext-Suche in allen Karten
+- Allergenkennzeichnung nach EU-Norm
+- Dreisprachig (DE / IT / EN) – live umschaltbar im Header
+- Animierter Splash Screen
+- Natives iOS-Feeling: Blur-Tab-Bar, Haptic Feedback, Reanimated-Animationen
+
+---
+
+## Projekt starten
+
+**Voraussetzungen:** Node.js ≥ 18, npm, Expo CLI
+
+```bash
+npm install
+npx expo start
+```
+
+Mit der **Expo Go** App scannen oder im Simulator/Emulator starten:
+
+```bash
+npx expo start --ios
+npx expo start --android
+npx expo start --web
+```
+
+---
+
+## Projektstruktur
+
+```
+CampedellApp/
+├── assets/                  # Bilder, Icons, Logo
+├── src/
+│   ├── components/
+│   │   ├── AllergenBadge    # Allergen-Icons nach EU-Norm
+│   │   ├── CampedelLogo     # SVG-Logo
+│   │   ├── FadeInView       # Animierter Einblend-Wrapper
+│   │   ├── LanguageSwitcher # DE / IT / EN mit Slide-Animation
+│   │   ├── MenuItemCard     # Gerichts-Karte
+│   │   ├── SectionHeader    # Kategorieüberschrift
+│   │   └── WineCard         # Wein-Karte
+│   ├── data/
+│   │   ├── menu.json        # Speisekarte (editierbar)
+│   │   ├── wines.json       # Weinkarte (editierbar)
+│   │   ├── drinks.ts        # Getränkekarte
+│   │   ├── imageMap.ts      # Bildpfade Speisen
+│   │   └── wineImageMap.ts  # Bildpfade Weine
+│   ├── i18n/
+│   │   ├── de.ts            # Deutsche Übersetzungen
+│   │   ├── it.ts            # Italienische Übersetzungen
+│   │   └── en.ts            # Englische Übersetzungen
+│   ├── navigation/          # AppNavigator (Stack + Bottom Tabs)
+│   ├── screens/
+│   │   ├── SplashScreen     # Animierter Startbildschirm
+│   │   ├── HomeScreen       # Startseite
+│   │   ├── MenuScreen       # Speisekarte mit Suche
+│   │   ├── DrinksScreen     # Getränkekarte
+│   │   ├── WinesScreen      # Weinkarte mit Suche
+│   │   ├── ItemDetailScreen # Detail-Modal Gerichte
+│   │   └── WineDetailScreen # Detail-Modal Weine
+│   └── theme/
+│       ├── colors.ts        # Farbpalette (Burgund / Elfenbein)
+│       └── typography.ts    # iOS-Typografie-System
+├── App.tsx
+└── app.json
+```
+
+---
+
+## Inhalte anpassen
 
 ### Speisekarte (`src/data/menu.json`)
-
-Gerichte hinzufügen, löschen oder bearbeiten – einfach JSON editieren:
 
 ```json
 {
@@ -28,11 +98,9 @@ Gerichte hinzufügen, löschen oder bearbeiten – einfach JSON editieren:
 }
 ```
 
-Mögliche Allergene: `gluten` · `dairy` · `eggs` · `nuts` · `fish` · `shellfish` · `soy` · `celery` · `mustard` · `sesame` · `sulphites` · `lupins` · `molluscs` · `peanuts`
+**Mögliche Allergene:** `gluten` · `dairy` · `eggs` · `nuts` · `fish` · `shellfish` · `soy` · `celery` · `mustard` · `sesame` · `sulphites` · `lupins` · `molluscs` · `peanuts`
 
 ### Weinkarte (`src/data/wines.json`)
-
-Weine hinzufügen, löschen oder bearbeiten:
 
 ```json
 {
@@ -47,33 +115,26 @@ Weine hinzufügen, löschen oder bearbeiten:
     "de": "Weinbeschreibung auf Deutsch.",
     "it": "Descrizione del vino in italiano."
   },
-  "prices": {
-    "bottle": 30.00,
-    "glass": 5.00
-  },
+  "prices": { "bottle": 30.00, "glass": 5.00 },
   "awards": ["Falstaff 92/100"],
   "isOrganic": false
 }
 ```
 
-Kategorien: `sparkling` (Schaumwein) · `white` (Weißwein) · `red` (Rotwein)
+**Kategorien:** `sparkling` · `white` · `red`
 
-Rebsorten-Kürzel: `CH` Chardonnay · `ME` Merlot · `LA` Lagrein · `CS` Cab. Sauvignon · `CF` Cab. Franc · `PN` Pinot Nero · `PB` Pinot Bianco · `SB` Sauvignon Blanc · `RI` Riesling · `VT` Vernatsch
+**Rebsorten-Kürzel:** `CH` Chardonnay · `ME` Merlot · `LA` Lagrein · `CS` Cab. Sauvignon · `CF` Cab. Franc · `PN` Pinot Nero · `PB` Pinot Bianco · `SB` Sauvignon Blanc · `RI` Riesling · `VT` Vernatsch
 
-### Fotos hinzufügen (`src/data/imageMap.ts`)
+### Fotos hinzufügen
 
 1. Bild in `assets/food/` ablegen (z. B. `burger.jpg`)
-2. Zeile in `imageMap.ts` eintragen:
+2. Eintrag in `src/data/imageMap.ts` ergänzen:
    ```ts
    burger: require('../../assets/food/burger.jpg'),
    ```
 3. Im JSON beim Gericht setzen: `"image": "burger"`
 
-Das Bild erscheint dann gross im Detail-View und als Thumbnail in der Liste.
-
 ### Kategorien anpassen
-
-Jede Kategorie-Sektion in `menu.json` hat:
 
 ```json
 {
@@ -86,61 +147,9 @@ Jede Kategorie-Sektion in `menu.json` hat:
 }
 ```
 
-- `icon` – Name eines [Ionicons](https://ionic.io/ionicons)-Icons
+- `icon` – [Ionicons](https://ionic.io/ionicons)-Name
 - `gradientStart` / `gradientEnd` – Hintergrundfarbe für Thumbnails (Hex)
 - Neue Kategorienamen in `src/i18n/de.ts`, `it.ts`, `en.ts` eintragen
-
----
-
-## Projekt starten
-
-```bash
-npm install
-npx expo start
-```
-
-Mit der **Expo Go** App scannen oder im Simulator:
-
-```bash
-npx expo start --ios
-npx expo start --android
-```
-
----
-
-## Projektstruktur
-
-```
-src/
-  data/
-    menu.json        ← Speisekarte (editierbar)
-    wines.json       ← Weinkarte (editierbar)
-    imageMap.ts      ← Bilder-Pfade
-    food.ts          ← TypeScript-Typen
-    wines.ts         ← TypeScript-Typen
-    drinks.ts        ← Getraenkekarte
-  screens/
-    MenuScreen       ← Speisekarte mit Suche
-    WinesScreen      ← Weinkarte mit Suche
-    DrinksScreen     ← Getraenke
-    ItemDetailScreen ← Detail-Modal
-    InfoScreen       ← Ueber uns
-    SplashScreen     ← Ladescreen
-  components/
-    MenuItemCard     ← Gerichts-Karte
-    WineCard         ← Wein-Karte (Apple-Design)
-    LanguageSwitcher ← DE / IT / EN mit Slide-Animation
-    CampedelLogo     ← Logo
-    FadeInView       ← Animations-Wrapper
-  i18n/
-    de.ts / it.ts / en.ts  ← Uebersetzungen
-  theme/
-    colors.ts        ← Farbpalette (Burgund / Elfenbein)
-    typography.ts    ← iOS-Typographie
-assets/
-  logo.png           ← App-Icon und Logo
-  food/              ← Gerichts-Fotos (optional, leer anlegen)
-```
 
 ---
 
@@ -148,16 +157,18 @@ assets/
 
 | Paket | Version |
 |---|---|
-| Expo SDK | 54 |
+| Expo SDK | ~54 |
 | React Native | 0.81 |
-| TypeScript | 5.9 |
-| Expo Linear Gradient | 15 |
-| Expo Haptics | 15 |
-| Expo Blur | 15 |
-| React Navigation | 7 |
-| Ionicons | via @expo/vector-icons |
+| TypeScript | ~5.9 |
+| React Navigation | 7 (Stack + Bottom Tabs) |
+| Reanimated | ~4.1 |
+| Gesture Handler | ~2.28 |
+| Expo Blur | ~15 |
+| Expo Haptics | ~15 |
+| Expo Linear Gradient | ~15 |
 | react-native-svg | 15 |
+| Ionicons | via @expo/vector-icons |
 
 ---
 
-*Campedel - Sudtirol / Alto Adige*
+*Campedèl — Südtirol / Alto Adige*

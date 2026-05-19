@@ -5,11 +5,11 @@ export const colors = {
   cream:      '#F2EAE0',     // warm cream – pill backgrounds, inactive states
   creamDark:  '#E5D7CA',     // deeper cream – pressed states
 
-  // Brand / accent — wine red / burgundy (perfect for restaurant + wine region)
-  accent:      '#8B2635',    // deep burgundy – primary brand color
-  accentLight: '#F6EAEC',    // very light blush – tint backgrounds
-  accentDark:  '#611A23',    // dark burgundy – text on light backgrounds
-  accentMid:   '#A33040',    // medium burgundy – icons, highlights
+  // Brand / accent — mountain green (Südtirol alpine feel)
+  accent:      '#7EA13B',    // fresh green – primary brand color
+  accentLight: '#EEF5DC',    // very light green – tint backgrounds
+  accentDark:  '#587129',    // dark forest green – text on light backgrounds
+  accentMid:   '#6B8932',    // medium green – icons, highlights
 
   // Text — warm dark brown tones (warm, readable, not cold black)
   primary:   '#1A1208',      // near-black warm brown – headings & titles

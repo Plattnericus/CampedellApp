@@ -21,7 +21,7 @@ export interface Wine {
   awards?: string[];
   isOrganic?: boolean;
   isLocal?: boolean;
-  // Schlüssel für wineImages in wineImageMap.ts (z. B. "lagrein")
+  imageUrl?: string | null;
   image?: string;
 }
 

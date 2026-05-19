@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Image, ImageBackground, RefreshControl
+  View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, Easing, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLanguage } from '../i18n';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
@@ -48,11 +49,144 @@ const SECTION_LABELS: Record<string, Record<string, string>> = {
   en: { cards: 'Our menus' },
 };
 
+const HERO_IMAGES = [
+  require('../../assets/restaurant.jpg'),
+  require('../../assets/restaurant2.webp'),
+  require('../../assets/restaurant3.jpeg'),
+];
+const SLIDE_INTERVAL = 6500;
+const FADE_DURATION  = 1300;
+
+// ─── Crossfade hero slideshow ────────────────────────────────────────────────
+interface HeroSlideshowProps { children: React.ReactNode }
+
+const HeroSlideshow: React.FC<HeroSlideshowProps> = ({ children }) => {
+  const opacities = useRef(
+    HERO_IMAGES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))
+  ).current;
+  const scales = useRef(HERO_IMAGES.map(() => new Animated.Value(1))).current;
+  // Animated dot widths and opacities — no state change = no flicker
+  const dotWidths    = useRef(HERO_IMAGES.map((_, i) => new Animated.Value(i === 0 ? 18 : 6))).current;
+  const dotOpacities = useRef(HERO_IMAGES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0.35))).current;
+  const currentIdxRef = useRef(0);
+
+  const startKenBurns = (idx: number) => {
+    scales[idx].setValue(1);
+    Animated.timing(scales[idx], {
+      toValue: 1.08,
+      duration: SLIDE_INTERVAL + FADE_DURATION,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const animateDots = (from: number, to: number) => {
+    Animated.parallel([
+      Animated.timing(dotWidths[from],    { toValue: 6,    duration: 350, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
+      Animated.timing(dotOpacities[from], { toValue: 0.35, duration: 350, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
+      Animated.timing(dotWidths[to],      { toValue: 18,   duration: 350, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
+      Animated.timing(dotOpacities[to],   { toValue: 1,    duration: 350, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
+    ]).start();
+  };
+
+  useEffect(() => {
+    startKenBurns(0);
+
+    const id = setInterval(() => {
+      const from = currentIdxRef.current;
+      const to   = (from + 1) % HERO_IMAGES.length;
+
+      startKenBurns(to);
+      animateDots(from, to);
+
+      Animated.parallel([
+        Animated.timing(opacities[from], { toValue: 0, duration: FADE_DURATION, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(opacities[to],   { toValue: 1, duration: FADE_DURATION, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]).start(() => {
+        currentIdxRef.current = to;
+      });
+    }, SLIDE_INTERVAL);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <View style={heroStyles.wrap}>
+      {HERO_IMAGES.map((source, i) => (
+        <Animated.Image
+          key={i}
+          source={source}
+          style={[heroStyles.image, { opacity: opacities[i], transform: [{ scale: scales[i] }] }]}
+          resizeMode="cover"
+        />
+      ))}
+      <View style={heroStyles.overlay}>
+        <View style={heroStyles.textWrap}>{children}</View>
+        <View style={heroStyles.dots}>
+          {HERO_IMAGES.map((_, i) => (
+            <Animated.View
+              key={i}
+              style={[heroStyles.dot, { width: dotWidths[i], opacity: dotOpacities[i] }]}
+            />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const heroStyles = StyleSheet.create({
+  wrap: {
+    height: 240,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: '#0E0B06',
+  },
+  image: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(20,10,5,0.48)',
+    justifyContent: 'space-between',
+    padding: 22,
+    paddingBottom: 16,
+  },
+  textWrap: { gap: 6, justifyContent: 'flex-end', flex: 1 },
+  dots: {
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'flex-end',
+  },
+  dot: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+  },
+});
+
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { lang } = useLanguage();
   const { foodSections, drinkSections, wineSections, loading, refreshData } = useAppContent();
   const w = WELCOME[lang] ?? WELCOME.de;
   const labels = SECTION_LABELS[lang] ?? SECTION_LABELS.de;
+
+  const scrollRef    = useRef<ScrollView>(null);
+  const screenOpacity = useRef(new Animated.Value(0)).current;
+  const [refreshing, setRefreshing] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    Animated.timing(screenOpacity, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+    return () => screenOpacity.setValue(0);
+  }, []));
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await refreshData(); } finally { setRefreshing(false); }
+  };
 
   const totalDishes  = foodSections?.reduce((n, s) => n + s.items.length, 0) || 0;
   const totalDrinks  = drinkSections?.reduce((n, s) => n + s.items.length, 0) || 0;
@@ -100,31 +234,26 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   ];
 
   return (
+    <Animated.View style={{ flex: 1, opacity: screenOpacity }}>
     <ScrollView
+      ref={scrollRef}
       style={styles.container}
       contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}      refreshControl={
-        <RefreshControl refreshing={loading} onRefresh={refreshData} tintColor={colors.accent} />
-      }    >
-      {/* Hero */}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />
+      }
+    >
+      {/* Hero slideshow */}
       <FadeInView duration={500}>
         <View style={styles.heroWrap}>
-          <ImageBackground
-            source={require('../../assets/restaurant.jpg')}
-            style={styles.hero}
-            imageStyle={styles.heroImg}
-            resizeMode="cover"
-          >
-            <View style={styles.heroOverlay}>
-              <View style={styles.heroContent}>
-                <Text style={styles.heroTitle}>{w.title}</Text>
-                <Text style={styles.heroSub}>{w.sub}</Text>
-                <View style={styles.heroBadge}>
-                  <Text style={styles.heroBadgeText}>{w.tag}</Text>
-                </View>
-              </View>
+          <HeroSlideshow>
+            <Text style={styles.heroTitle}>{w.title}</Text>
+            <Text style={styles.heroSub}>{w.sub}</Text>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>{w.tag}</Text>
             </View>
-          </ImageBackground>
+          </HeroSlideshow>
         </View>
       </FadeInView>
 
@@ -162,6 +291,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
       <View style={{ height: 110 }} />
     </ScrollView>
+    </Animated.View>
   );
 };
 
@@ -180,16 +310,6 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 5,
   },
-  hero: { width: '100%', height: 210 },
-  heroImg: { borderRadius: 22 },
-  heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(20, 10, 5, 0.48)',
-    borderRadius: 22,
-    justifyContent: 'flex-end',
-    padding: 22,
-  },
-  heroContent: { gap: 6 },
   heroTitle: {
     fontSize: 30,
     fontWeight: '800',

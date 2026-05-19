@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, Pressable, ScrollView, TextInput, RefreshControl
+  View, Text, StyleSheet, SectionList, ScrollView, Pressable,
+  TextInput, RefreshControl, Animated,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../i18n';
 import { colors } from '../theme/colors';
@@ -17,28 +19,61 @@ const CATS: WineCategory[] = ['sparkling', 'white', 'red'];
 
 type WineFilter = 'organic' | 'local' | 'trocken' | 'halbtrocken' | 'lieblich';
 
+type WineSectionData = {
+  id: WineCategory;
+  category: WineCategory;
+  data: Wine[];
+};
+
 export const WinesScreen: React.FC = () => {
   const { t, lang } = useLanguage();
   const { wineSections, loading, refreshData } = useAppContent();
-  const [activeTab, setActiveTab] = useState<WineCategory>('sparkling');
+
+  const screenOpacity = useRef(new Animated.Value(0)).current;
+  const [refreshing, setRefreshing] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    Animated.timing(screenOpacity, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+    try {
+      listRef.current?.scrollToLocation({ sectionIndex: 0, itemIndex: 0, animated: false, viewOffset: 0 });
+    } catch {}
+    return () => screenOpacity.setValue(0);
+  }, []));
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await refreshData(); } finally { setRefreshing(false); }
+  };
+
+  const [activeCategory, setActiveCategory] = useState<WineCategory>('sparkling');
   const [query, setQuery] = useState('');
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<WineCategory>('sparkling');
   const [detailVisible, setDetailVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeFilters, setActiveFilters] = useState<WineFilter[]>([]);
+  const [filterKey, setFilterKey] = useState(0);
 
-  const allWines = useMemo(() => wineSections.find((s) => s.category === activeTab)?.wines ?? [], [wineSections, activeTab]);
+  const listRef = useRef<SectionList<any>>(null);
+  const pillScrollRef = useRef<ScrollView>(null);
+  const pillOffsets = useRef<Record<string, { x: number; width: number }>>({});
+
+  // Auto-scroll pill bar to keep active category visible
+  useEffect(() => {
+    const pill = pillOffsets.current[activeCategory];
+    if (pill && pillScrollRef.current) {
+      pillScrollRef.current.scrollTo({
+        x: Math.max(0, pill.x - 16),
+        animated: true,
+      });
+    }
+  }, [activeCategory]);
 
   const filterGroups: FilterGroup[] = useMemo(() => [
     {
       title: lang === 'de' ? 'Eigenschaften' : lang === 'it' ? 'Caratteristiche' : 'Properties',
       options: [
-        {
-          key: 'organic',
-          label: 'Bio',
-          icon: 'leaf',
-          iconColor: '#15803d',
-        },
+        { key: 'organic', label: 'Bio', icon: 'leaf', iconColor: '#15803d' },
         {
           key: 'local',
           label: lang === 'de' ? 'Lokal' : lang === 'it' ? 'Locale' : 'Local',
@@ -50,60 +85,77 @@ export const WinesScreen: React.FC = () => {
     {
       title: lang === 'de' ? 'Geschmack' : lang === 'it' ? 'Gusto' : 'Taste',
       options: [
-        {
-          key: 'trocken',
-          label: lang === 'de' ? 'Trocken' : lang === 'it' ? 'Secco' : 'Dry',
-        },
-        {
-          key: 'halbtrocken',
-          label: lang === 'de' ? 'Halbtrocken' : lang === 'it' ? 'Semisecco' : 'Off-dry',
-        },
-        {
-          key: 'lieblich',
-          label: lang === 'de' ? 'Lieblich' : lang === 'it' ? 'Amabile' : 'Sweet',
-        },
+        { key: 'trocken',     label: lang === 'de' ? 'Trocken'     : lang === 'it' ? 'Secco'     : 'Dry'    },
+        { key: 'halbtrocken', label: lang === 'de' ? 'Halbtrocken' : lang === 'it' ? 'Semisecco' : 'Off-dry' },
+        { key: 'lieblich',    label: lang === 'de' ? 'Lieblich'    : lang === 'it' ? 'Amabile'   : 'Sweet'   },
       ],
     },
   ], [lang]);
 
-  const wines: Wine[] = useMemo(() => {
-    let data = allWines;
-
-    if (activeFilters.length > 0) {
-      const drynessFilters = activeFilters.filter((f) =>
-        f === 'trocken' || f === 'halbtrocken' || f === 'lieblich',
-      );
-      data = data.filter((wine) => {
-        if (activeFilters.includes('organic') && !wine.isOrganic) return false;
-        if (activeFilters.includes('local') && !wine.isLocal) return false;
-        if (drynessFilters.length > 0 && !drynessFilters.includes(wine.dryness as any)) return false;
-        return true;
-      });
-    }
-
-    if (!query.trim()) return data;
-    const q = query.toLowerCase();
-    const descLang = lang === 'en' ? 'de' : lang as 'de' | 'it';
-    return data.filter(
-      (w) =>
-        w.name.toLowerCase().includes(q) ||
-        w.winery.toLowerCase().includes(q) ||
-        w.region.toLowerCase().includes(q) ||
-        w.description[descLang].toLowerCase().includes(q),
+  // Build SectionList sections from all wine categories
+  const sections: WineSectionData[] = useMemo(() => {
+    const drynessFilters = activeFilters.filter(
+      (f) => f === 'trocken' || f === 'halbtrocken' || f === 'lieblich'
     );
-  }, [query, activeTab, allWines, activeFilters]);
+    const descLang = lang === 'en' ? 'de' : lang as 'de' | 'it';
+    const q = query.toLowerCase().trim();
+
+    return CATS.map((cat) => {
+      const section = wineSections.find((s) => s.category === cat);
+      let data: Wine[] = section?.wines ?? [];
+
+      // Apply filters
+      if (activeFilters.length > 0) {
+        data = data.filter((wine) => {
+          if (activeFilters.includes('organic') && !wine.isOrganic) return false;
+          if (activeFilters.includes('local') && !wine.isLocal) return false;
+          if (drynessFilters.length > 0 && !drynessFilters.includes(wine.dryness as any)) return false;
+          return true;
+        });
+      }
+
+      // Apply search
+      if (q) {
+        data = data.filter(
+          (w) =>
+            w.name.toLowerCase().includes(q) ||
+            w.winery.toLowerCase().includes(q) ||
+            w.region.toLowerCase().includes(q) ||
+            w.description[descLang].toLowerCase().includes(q)
+        );
+      }
+
+      return { id: cat, category: cat, data };
+    }).filter((s) => s.data.length > 0);
+  }, [wineSections, query, activeFilters, lang]);
 
   const toggleFilter = (key: string) => {
     setActiveFilters((prev) =>
       prev.includes(key as WineFilter)
         ? prev.filter((f) => f !== key)
-        : [...prev, key as WineFilter],
+        : [...prev, key as WineFilter]
     );
+    setFilterKey((k) => k + 1);
   };
 
-  const handleWinePress = (wine: Wine) => {
+  const handleWinePress = (wine: Wine, category: WineCategory) => {
     setSelectedWine(wine);
+    setSelectedCategory(category);
     setDetailVisible(true);
+  };
+
+  const scrollToCategory = (cat: WineCategory) => {
+    setActiveCategory(cat);
+    const idx = sections.findIndex((s) => s.category === cat);
+    if (idx < 0) return;
+    try {
+      listRef.current?.scrollToLocation({
+        sectionIndex: idx,
+        itemIndex: 0,
+        animated: true,
+        viewOffset: 0,
+      });
+    } catch {}
   };
 
   const CAT_LABEL: Record<WineCategory, keyof typeof t.categories> = {
@@ -116,107 +168,142 @@ export const WinesScreen: React.FC = () => {
   if (loading && wineSections.length === 0) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: colors.tertiary }}>Loading...</Text>
+        <Text style={{ color: colors.tertiary }}>Loading…</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Search bar + filter button */}
-      <FadeInView delay={80} duration={380}>
-        <View style={styles.searchRow}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={16} color={colors.tertiary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={lang === 'de' ? 'Wein suchen…' : lang === 'it' ? 'Cerca vino…' : 'Search wine…'}
-              placeholderTextColor={colors.tertiary}
-              value={query}
-              onChangeText={setQuery}
-              returnKeyType="search"
-              autoCorrect={false}
-            />
-            {query.length > 0 && (
-              <Pressable onPress={() => setQuery('')} hitSlop={8}>
-                <Ionicons name="close-circle" size={16} color={colors.tertiary} />
-              </Pressable>
-            )}
-          </View>
-
-          <Pressable
-            style={[styles.filterBtn, activeFilters.length > 0 && styles.filterBtnActive]}
-            onPress={() => setFilterVisible(true)}
-          >
-            <Ionicons
-              name={activeFilters.length > 0 ? 'funnel' : 'funnel-outline'}
-              size={18}
-              color={activeFilters.length > 0 ? colors.white : colors.secondary}
-            />
-            {activeFilters.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{activeFilters.length}</Text>
-              </View>
-            )}
-          </Pressable>
+    <Animated.View style={[styles.container, { opacity: screenOpacity }]}>
+      {/* Search bar + filter */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={16} color={colors.tertiary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={lang === 'de' ? 'Wein suchen…' : lang === 'it' ? 'Cerca vino…' : 'Search wine…'}
+            placeholderTextColor={colors.tertiary}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={16} color={colors.tertiary} />
+            </Pressable>
+          )}
         </View>
-      </FadeInView>
+
+        <Pressable
+          style={[styles.filterBtn, activeFilters.length > 0 && styles.filterBtnActive]}
+          onPress={() => setFilterVisible(true)}
+        >
+          <Ionicons
+            name={activeFilters.length > 0 ? 'funnel' : 'funnel-outline'}
+            size={18}
+            color={activeFilters.length > 0 ? colors.white : colors.secondary}
+          />
+          {activeFilters.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{activeFilters.length}</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
 
       {/* Category pills — hidden while searching */}
       {!query.trim() && (
-        <FadeInView delay={140} duration={380}>
-          <View style={styles.pillBar}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.pillContent}
-            >
-              {CATS.map((cat) => {
-                const active = activeTab === cat;
-                const meta = WINE_CATEGORY_META[cat];
-                return (
-                  <Pressable
-                    key={cat}
-                    style={[styles.pill, active && styles.pillActive]}
-                    onPress={() => { setActiveTab(cat); setQuery(''); }}
-                  >
-                    <Ionicons
-                      name={meta.icon as any}
-                      size={13}
-                      color={active ? colors.white : colors.secondary}
-                    />
-                    <Text style={[styles.pillText, active && styles.pillTextActive]}>
-                      {t.categories[CAT_LABEL[cat]]}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </FadeInView>
+        <View style={styles.pillBar}>
+          <ScrollView
+            ref={pillScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pillContent}
+            scrollEventThrottle={16}
+          >
+            {CATS.map((cat) => {
+              const active = activeCategory === cat;
+              const meta = WINE_CATEGORY_META[cat];
+              return (
+                <Pressable
+                  key={cat}
+                  style={[styles.pill, active && styles.pillActive]}
+                  onPress={() => scrollToCategory(cat)}
+                  onLayout={(e) => {
+                    pillOffsets.current[cat] = {
+                      x: e.nativeEvent.layout.x,
+                      width: e.nativeEvent.layout.width,
+                    };
+                  }}
+                >
+                  <Ionicons
+                    name={meta.icon as any}
+                    size={13}
+                    color={active ? colors.white : colors.secondary}
+                  />
+                  <Text style={[styles.pillText, active && styles.pillTextActive]}>
+                    {t.categories[CAT_LABEL[cat]]}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
       )}
 
-      <FlatList
-        key={activeTab + query + activeFilters.join()}
-        data={wines}
+      {/* All wines in one SectionList */}
+      <SectionList
+        key={filterKey}
+        ref={listRef}
+        sections={sections}
         keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <FadeInView delay={index * 55} duration={340}>
-            <WineCard wine={item} category={activeTab} onPress={handleWinePress} />
+        renderItem={({ item, index, section }) => (
+          <FadeInView delay={index * 35} duration={280}>
+            <WineCard
+              wine={item}
+              category={(section as WineSectionData).category}
+              onPress={(wine) => handleWinePress(wine, (section as WineSectionData).category)}
+            />
           </FadeInView>
         )}
+        renderSectionHeader={({ section }) => {
+          const cat = (section as WineSectionData).category;
+          const meta = WINE_CATEGORY_META[cat];
+          return (
+            <View style={styles.sectionHeader}>
+              <Ionicons name={meta.icon as any} size={20} color={colors.accent} />
+              <Text style={styles.sectionTitle}>{t.categories[CAT_LABEL[cat]]}</Text>
+            </View>
+          );
+        }}
+        stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.list, wines.length === 0 && { flex: 1, backgroundColor: colors.background }]}
+        onViewableItemsChanged={({ viewableItems }) => {
+          if (query.trim()) return;
+          const top = viewableItems.find((vi) => vi.section);
+          if (top?.section) {
+            const cat = (top.section as WineSectionData).category;
+            setActiveCategory(cat);
+          }
+        }}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 20 }}
+        contentContainerStyle={[
+          styles.list,
+          sections.length === 0 && { flex: 1, backgroundColor: colors.background },
+        ]}
         ListEmptyComponent={
-          <View style={[styles.emptyWrap, { flex: 1, justifyContent: 'center', backgroundColor: colors.background }]}>
+          <View style={[styles.emptyWrap, { flex: 1, justifyContent: 'center' }]}>
             <Ionicons name="wine-outline" size={40} color={colors.border} />
             <Text style={styles.emptyText}>
               {lang === 'de' ? 'Keine Ergebnisse' : lang === 'it' ? 'Nessun risultato' : 'No results'}
             </Text>
           </View>
-        }        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refreshData} tintColor={colors.accent} />
-        }      />
+        }
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />
+        }
+      />
 
       <FilterSheet
         visible={filterVisible}
@@ -225,22 +312,23 @@ export const WinesScreen: React.FC = () => {
         groups={filterGroups}
         activeFilters={activeFilters}
         onToggle={toggleFilter}
-        onReset={() => setActiveFilters([])}
+        onReset={() => { setActiveFilters([]); setFilterKey((k) => k + 1); }}
         resetLabel={resetLabel}
       />
 
       <WineDetailScreen
         wine={selectedWine}
-        category={activeTab}
+        category={selectedCategory}
         visible={detailVisible}
         onClose={() => setDetailVisible(false)}
       />
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -302,6 +390,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     lineHeight: 12,
   },
+
   pillBar: {
     paddingVertical: 8,
     borderBottomWidth: 1,
@@ -319,20 +408,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  pillActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+  pillActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  pillText: { ...typography.caption1, color: colors.secondary, fontWeight: '500' },
+  pillTextActive: { color: colors.white, fontWeight: '600' },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
-  pillText: {
-    ...typography.caption1,
-    color: colors.secondary,
-    fontWeight: '500',
+  sectionTitle: {
+    ...typography.title2,
+    color: colors.primary,
+    fontWeight: '800',
   },
-  pillTextActive: {
-    color: colors.white,
-    fontWeight: '600',
-  },
-  list: { paddingTop: 14, paddingBottom: 100 },
+
+  list: { paddingBottom: 100 },
   emptyWrap: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { ...typography.callout, color: colors.tertiary },
 });

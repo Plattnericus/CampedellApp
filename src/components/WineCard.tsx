@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,6 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { useLanguage } from '../i18n';
 import { Wine, WineCategory, WINE_CATEGORY_META } from '../data/wines';
-import { wineImages } from '../data/wineImageMap';
 
 interface Props {
   wine: Wine;
@@ -27,8 +26,18 @@ export const WineCard: React.FC<Props> = ({ wine, category, onPress }) => {
   const scale = useRef(new Animated.Value(1)).current;
   const bg    = useRef(new Animated.Value(0)).current;
   const meta  = WINE_CATEGORY_META[category];
-  const realImage = wineImages[wine.image ?? wine.id];
+  const [imgError, setImgError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const remoteUrl = wine.imageUrl;
   const desc  = wine.description[lang === 'en' ? 'de' : lang];
+
+  const handleImageError = () => {
+    if (retryCount < 2) {
+      setTimeout(() => setRetryCount(c => c + 1), 1500 * (retryCount + 1));
+    } else {
+      setImgError(true);
+    }
+  };
 
   const handlePressIn = () => {
     Haptics.selectionAsync();
@@ -70,8 +79,14 @@ export const WineCard: React.FC<Props> = ({ wine, category, onPress }) => {
           style={styles.inner}
         >
           {/* Thumbnail */}
-          {realImage ? (
-            <Image source={realImage} style={styles.thumbImage} resizeMode="cover" />
+          {remoteUrl && !imgError ? (
+            <Image
+              key={retryCount}
+              source={{ uri: remoteUrl }}
+              style={styles.thumbImage}
+              resizeMode="cover"
+              onError={handleImageError}
+            />
           ) : (
             <LinearGradient
               colors={[meta.gradientStart, meta.gradientEnd] as const}

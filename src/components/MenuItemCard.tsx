@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,6 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { useLanguage } from '../i18n';
 import { FoodItem } from '../data/food';
-import { foodImages } from '../data/imageMap';
 import { AllergenBadge } from './AllergenBadge';
 
 interface Props {
@@ -28,6 +27,16 @@ export const MenuItemCard: React.FC<Props> = ({
   const { lang } = useLanguage();
   const scale = useRef(new Animated.Value(1)).current;
   const bg    = useRef(new Animated.Value(0)).current;
+  const [imgError, setImgError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const handleImageError = () => {
+    if (retryCount < 2) {
+      setTimeout(() => setRetryCount(c => c + 1), 1500 * (retryCount + 1));
+    } else {
+      setImgError(true);
+    }
+  };
 
   const handlePressIn = () => {
     Haptics.selectionAsync();
@@ -50,9 +59,7 @@ export const MenuItemCard: React.FC<Props> = ({
   });
 
   const formatPrice = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
-  // Prefer remote imageUrl from API, fallback to local image map
-  const remoteUrl = (item as any).imageUrl || (item as any).imageUrlBig;
-  const localImage = foodImages[item.image ?? item.id];
+  const remoteUrl = item.imageUrl;
 
   return (
     <Animated.View style={[styles.cardWrap, { transform: [{ scale }] }]}>
@@ -64,10 +71,14 @@ export const MenuItemCard: React.FC<Props> = ({
           style={styles.inner}
         >
           {/* Thumbnail */}
-          {remoteUrl ? (
-            <Image source={{ uri: remoteUrl }} style={styles.thumbImage} resizeMode="cover" />
-          ) : localImage ? (
-            <Image source={localImage} style={styles.thumbImage} resizeMode="cover" />
+          {remoteUrl && !imgError ? (
+            <Image
+              key={retryCount}
+              source={{ uri: remoteUrl }}
+              style={styles.thumbImage}
+              resizeMode="cover"
+              onError={handleImageError}
+            />
           ) : (
             <LinearGradient
               colors={[gradientStart, gradientEnd] as const}

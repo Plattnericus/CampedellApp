@@ -7,7 +7,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { FoodItem, Allergen } from '../data/food';
-import { foodImages } from '../data/imageMap';
 import { useLanguage, Language } from '../i18n';
 import { useAppContent } from '../data/DataContext';
 import { colors } from '../theme/colors';
@@ -142,9 +141,9 @@ export const ItemDetailScreen: React.FC<Props> = ({ item, visible, onClose }) =>
 
   // ── Guard ─────────────────────────────────────────────────────────────────
   if (!item) return null;
-  const fmt       = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
-  const section   = foodSections.find((s) => s.items.some((i) => i.id === item.id));
-  const realImage = foodImages[item.image ?? item.id];
+  const fmt     = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
+  const section = foodSections.find((s) => s.items.some((i) => i.id === item.id));
+  const remoteUrl = item.imageUrl;
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={dismiss}>
@@ -175,8 +174,8 @@ export const ItemDetailScreen: React.FC<Props> = ({ item, visible, onClose }) =>
             </View>
 
             {/* Hero image or gradient */}
-            {realImage ? (
-              <Image source={realImage} style={styles.heroImage} resizeMode="cover" />
+            {remoteUrl ? (
+              <Image source={{ uri: remoteUrl }} style={styles.heroImage} resizeMode="cover" />
             ) : section ? (
               <LinearGradient
                 colors={[section.gradientStart, section.gradientEnd] as const}

@@ -11,7 +11,7 @@ export interface FoodItem {
   allergens?: Allergen[];
   isVegetarian?: boolean;
   isVegan?: boolean;
-  // Schlüssel für foodImages in imageMap.ts  (z. B. "burger")
+  imageUrl?: string | null;
   image?: string;
 }
 

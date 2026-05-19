@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Modal, Pressable,
   Animated, Dimensions, ScrollView,
@@ -8,6 +8,54 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 
 const SH = Dimensions.get('window').height;
+
+// ─── Animated chip ────────────────────────────────────────────────────────────
+interface ChipProps {
+  opt: FilterOption;
+  active: boolean;
+  onToggle: (key: string) => void;
+  delay: number;
+}
+
+const AnimatedChip: React.FC<ChipProps> = ({ opt, active, onToggle, delay }) => {
+  const scale = useRef(new Animated.Value(0.85)).current;
+  const mountOpacity = useRef(new Animated.Value(0)).current;
+
+  // Stagger in on mount
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(mountOpacity, { toValue: 1, duration: 220, delay, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 7, tension: 180, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const handlePress = useCallback(() => {
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 0.88, friction: 5, tension: 300, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1,    friction: 5, tension: 300, useNativeDriver: true }),
+    ]).start();
+    onToggle(opt.key);
+  }, [onToggle, opt.key]);
+
+  return (
+    <Animated.View style={{ opacity: mountOpacity, transform: [{ scale }] }}>
+      <Pressable
+        style={[styles.chip, active && styles.chipActive]}
+        onPress={handlePress}
+      >
+        {opt.icon && (
+          <Ionicons
+            name={opt.icon as any}
+            size={13}
+            color={active ? colors.white : (opt.iconColor ?? colors.secondary)}
+          />
+        )}
+        <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>
+        {active && <Ionicons name="checkmark" size={12} color={colors.white} />}
+      </Pressable>
+    </Animated.View>
+  );
+};
 
 export interface FilterOption {
   key: string;
@@ -92,30 +140,15 @@ export const FilterSheet: React.FC<Props> = ({
               <View key={gi} style={styles.group}>
                 <Text style={styles.groupTitle}>{group.title}</Text>
                 <View style={styles.chips}>
-                  {group.options.map((opt) => {
-                    const active = activeFilters.includes(opt.key);
-                    return (
-                      <Pressable
-                        key={opt.key}
-                        style={[styles.chip, active && styles.chipActive]}
-                        onPress={() => onToggle(opt.key)}
-                      >
-                        {opt.icon && (
-                          <Ionicons
-                            name={opt.icon as any}
-                            size={13}
-                            color={active ? colors.white : (opt.iconColor ?? colors.secondary)}
-                          />
-                        )}
-                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                          {opt.label}
-                        </Text>
-                        {active && (
-                          <Ionicons name="checkmark" size={12} color={colors.white} />
-                        )}
-                      </Pressable>
-                    );
-                  })}
+                  {group.options.map((opt, oi) => (
+                    <AnimatedChip
+                      key={opt.key}
+                      opt={opt}
+                      active={activeFilters.includes(opt.key)}
+                      onToggle={onToggle}
+                      delay={gi * 60 + oi * 40}
+                    />
+                  ))}
                 </View>
               </View>
             ))}

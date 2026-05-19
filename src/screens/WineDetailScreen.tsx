@@ -7,7 +7,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { Wine, WineCategory, WINE_CATEGORY_META } from '../data/wines';
-import { wineImages } from '../data/wineImageMap';
 import { useLanguage } from '../i18n';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
@@ -127,7 +126,7 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
 
   const fmt       = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
   const meta      = WINE_CATEGORY_META[category];
-  const realImage = wineImages[wine.image ?? wine.id];
+  const remoteUrl = wine.imageUrl;
   const desc      = wine.description[lang === 'en' ? 'de' : lang as 'de' | 'it'];
 
   return (
@@ -157,8 +156,8 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
             </View>
 
             {/* Hero */}
-            {realImage ? (
-              <Image source={realImage} style={styles.heroImage} resizeMode="cover" />
+            {remoteUrl ? (
+              <Image source={{ uri: remoteUrl }} style={styles.heroImage} resizeMode="cover" />
             ) : (
               <LinearGradient
                 colors={[meta.gradientStart, meta.gradientEnd] as const}

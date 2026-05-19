@@ -27,29 +27,32 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       if (force) setLoading(true);
       setError(null);
-      
+
       const [menuRes, drinksRes, winesRes] = await Promise.all([
         fetchMenu(force),
         fetchDrinks(force),
-        fetchWines(force)
+        fetchWines(force),
       ]);
-      
-      setFoodSections((menuRes as any).sections || menuRes);
-      setDrinkSections((drinksRes as any).sections || drinksRes);
-      setWineSections((winesRes as any).sections || winesRes);
+
+      setFoodSections((menuRes as any).sections ?? (menuRes as any) ?? []);
+      setDrinkSections((drinksRes as any).sections ?? (drinksRes as any) ?? []);
+      setWineSections((winesRes as any).sections ?? (winesRes as any) ?? []);
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Failed to load menu data. Please check your connection.');
-      Alert.alert(
-        'Verbindungsfehler',
-        'Leider konnten wir keine Verbindung zum Server herstellen. Möglicherweise sind einige Informationen nicht aktuell.',
-        [{ text: 'OK' }]
-      );
+      if (foodSections.length === 0) {
+        Alert.alert(
+          'Verbindungsfehler',
+          'Leider konnten wir keine Verbindung zum Server herstellen. Bitte überprüfe deine Internetverbindung.',
+          [{ text: 'OK' }]
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // Load fresh from API on every app start
   useEffect(() => {
     loadData(true);
   }, []);

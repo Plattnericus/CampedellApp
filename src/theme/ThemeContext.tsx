@@ -17,16 +17,18 @@ const ThemeContext = createContext<ThemeCtx>({
 
 const STORAGE_KEY = 'campedel_theme';
 const { width, height } = Dimensions.get('window');
-const MAX_RADIUS = Math.sqrt(width * width + height * height);
+const MAX_RADIUS = Math.sqrt(width * width + height * height) + 50;
 
+// Altes Wave Design: Perfekt glatter, nativer SVG Kreis
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 type SnapshotLayer = {
-  id: number;
+  id: string;
   uri: string;
   x: number;
   y: number;
   anim: Animated.Value;
+  oldBg: string;
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -45,6 +47,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const uri = await viewShotRef.current?.capture?.();
       if (!uri) return;
 
+      // Wir sichern die ALTE Farbe für den Bruchteil einer Sekunde
+      const oldBg = isDark ? '#1A1208' : '#FAF6F1';
+
+      // 1. SOFORT Umschalten. KEIN Timeout = absolut responsive und spamable!
       setIsDark((prev) => {
         const next = !prev;
         AsyncStorage.setItem(STORAGE_KEY, next ? 'dark' : 'light');
@@ -52,27 +58,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
 
       const newLayer: SnapshotLayer = {
-        id: Date.now() + Math.random(),
+        id: Math.random().toString(36),
         uri,
         x,
         y,
         anim: new Animated.Value(0),
+        oldBg,
       };
 
-      // Setze neue Layer _vor_ die alten ins Array,
-      // damit React sie früher rendert (also Z-Index technisch _unter_ den alten Layern).
-      // Dadurch kann eine neue Welle perfekt innerhalb des Loches einer alten Welle wachsen!
+      // 2. Layer drunterlegen für richtiges Stacking beim Spammen (neu unter alt)
       setLayers((prev) => [newLayer, ...prev]);
 
-      setTimeout(() => {
-        Animated.timing(newLayer.anim, {
-          toValue: MAX_RADIUS,
-          duration: 600,
-          useNativeDriver: false, // Must be false for SVG radius animation
-        }).start(() => {
-          setLayers((prev) => prev.filter((l) => l.id !== newLayer.id));
-        });
-      }, 40);
+      // 3. Animation SOFORT starten, die Vektorkurven wachsen sauber und pixelperfekt aus
+      Animated.timing(newLayer.anim, {
+        toValue: MAX_RADIUS,
+        duration: 650,
+        useNativeDriver: false, // Erlaubt perfekten SVG Kreis!
+      }).start(() => {
+        setLayers((prev) => prev.filter((l) => l.id !== newLayer.id));
+      });
 
     } catch (e) {
       console.warn('Mask transition failed', e);
@@ -82,7 +86,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>
-      <View style={{ flex: 1 }}>
+      {/* Root Background verhindert Black-Screen Flashes */}
+      <View style={{ flex: 1, backgroundColor: isDark ? '#1A1208' : '#FAF6F1' }}>
         <ViewShot ref={viewShotRef} style={{ flex: 1 }} options={{ format: 'jpg', quality: 0.6 }}>
           {children}
         </ViewShot>
@@ -104,7 +109,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   </Svg>
                 }
               >
-                <Image source={{ uri: layer.uri }} style={StyleSheet.absoluteFillObject} fadeDuration={0} />
+                {/* 
+                  DER ANTI-FLICKER TRICK:
+                  Anstatt ein setTimeout() zu haben (was die App hart laggy machte),
+                  fängt dieses 'backgroundColor' die 1-2 Frames dauernde JPG-Ladezeit ab.
+                  Es füllt das noch leere Snapshot-Image kurz mit der alten Theme-Farbe.
+                  Dadurch "blitzt" der neue Theme nicht vorzeitig auf = 100% sauberer Übergang instant!
+                */}
+                <Image 
+                  source={{ uri: layer.uri }} 
+                  style={[StyleSheet.absoluteFillObject, { backgroundColor: layer.oldBg }]} 
+                  fadeDuration={0} 
+                />
               </MaskedView>
             </View>
           ))}

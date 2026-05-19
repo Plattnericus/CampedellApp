@@ -8,8 +8,11 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { FadeInView } from '../components/FadeInView';
 import { SectionHeader } from '../components/SectionHeader';
+import { FilterSheet, FilterGroup } from '../components/FilterSheet';
 import { drinkSections, DrinkItem } from '../data/drinks';
 import { Translations } from '../i18n/de';
+
+type DrinkSort = 'price-asc' | 'price-desc' | 'alpha';
 
 const DrinkRow: React.FC<{ item: DrinkItem }> = ({ item }) => {
   const { lang } = useLanguage();
@@ -68,6 +71,8 @@ export const DrinksScreen: React.FC = () => {
   const { t, lang } = useLanguage();
   const [activeCategory, setActiveCategory] = useState('hotDrinks');
   const [query, setQuery] = useState('');
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [activeSort, setActiveSort] = useState<DrinkSort[]>([]);
   const listRef = useRef<SectionList<any>>(null);
 
   const allSections = drinkSections.map((s) => ({
@@ -76,16 +81,63 @@ export const DrinksScreen: React.FC = () => {
     data: s.items,
   }));
 
+  const filterGroups: FilterGroup[] = useMemo(() => [
+    {
+      title: lang === 'de' ? 'Sortierung' : lang === 'it' ? 'Ordina per' : 'Sort by',
+      options: [
+        {
+          key: 'price-asc',
+          label: lang === 'de' ? 'Preis aufsteigend' : lang === 'it' ? 'Prezzo crescente' : 'Price low–high',
+          icon: 'arrow-up',
+        },
+        {
+          key: 'price-desc',
+          label: lang === 'de' ? 'Preis absteigend' : lang === 'it' ? 'Prezzo decrescente' : 'Price high–low',
+          icon: 'arrow-down',
+        },
+        {
+          key: 'alpha',
+          label: lang === 'de' ? 'Alphabetisch' : lang === 'it' ? 'Alfabetico' : 'A–Z',
+          icon: 'text',
+        },
+      ],
+    },
+  ], [lang]);
+
   const sections = useMemo(() => {
-    if (!query.trim()) return allSections;
-    const q = query.toLowerCase();
-    return allSections
-      .map((s) => ({
-        ...s,
-        data: s.data.filter((item) => item.name[lang].toLowerCase().includes(q)),
-      }))
-      .filter((s) => s.data.length > 0);
-  }, [query, lang]);
+    const sort = activeSort[0] as DrinkSort | undefined;
+
+    let data = allSections;
+
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      data = data
+        .map((s) => ({
+          ...s,
+          data: s.data.filter((item) => item.name[lang].toLowerCase().includes(q)),
+        }))
+        .filter((s) => s.data.length > 0);
+    }
+
+    if (!sort) return data;
+
+    return data.map((s) => ({
+      ...s,
+      data: [...s.data].sort((a, b) => {
+        if (sort === 'price-asc') return a.prices[0].price - b.prices[0].price;
+        if (sort === 'price-desc') return b.prices[0].price - a.prices[0].price;
+        if (sort === 'alpha') return a.name[lang].localeCompare(b.name[lang]);
+        return 0;
+      }),
+    }));
+  }, [query, lang, activeSort]);
+
+  const toggleSort = (key: string) => {
+    // Only one sort active at a time — toggle off if already selected
+    setActiveSort((prev) =>
+      prev.includes(key as DrinkSort) ? [] : [key as DrinkSort],
+    );
+  };
 
   const scrollToSection = (idx: number) => {
     setActiveCategory(allSections[idx].id);
@@ -96,25 +148,46 @@ export const DrinksScreen: React.FC = () => {
     } catch {}
   };
 
+  const filterLabel = lang === 'de' ? 'Sortieren' : lang === 'it' ? 'Ordina' : 'Sort';
+  const resetLabel  = lang === 'de' ? 'Sortierung zurücksetzen' : lang === 'it' ? 'Reimposta' : 'Reset';
+
   return (
     <FadeInView style={styles.container}>
-      {/* Search bar */}
-      <View style={styles.searchBar}>
-        <Ionicons name="search" size={16} color={colors.tertiary} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder={lang === 'de' ? 'Getränk suchen…' : lang === 'it' ? 'Cerca bevanda…' : 'Search drinks…'}
-          placeholderTextColor={colors.tertiary}
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="search"
-          autoCorrect={false}
-        />
-        {query.length > 0 && (
-          <Pressable onPress={() => setQuery('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={16} color={colors.tertiary} />
-          </Pressable>
-        )}
+      {/* Search bar + filter button */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={16} color={colors.tertiary} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={lang === 'de' ? 'Getränk suchen…' : lang === 'it' ? 'Cerca bevanda…' : 'Search drinks…'}
+            placeholderTextColor={colors.tertiary}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={16} color={colors.tertiary} />
+            </Pressable>
+          )}
+        </View>
+
+        <Pressable
+          style={[styles.filterBtn, activeSort.length > 0 && styles.filterBtnActive]}
+          onPress={() => setFilterVisible(true)}
+        >
+          <Ionicons
+            name={activeSort.length > 0 ? 'swap-vertical' : 'swap-vertical-outline'}
+            size={18}
+            color={activeSort.length > 0 ? colors.white : colors.secondary}
+          />
+          {activeSort.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>1</Text>
+            </View>
+          )}
+        </Pressable>
       </View>
 
       {/* Category pills — hidden while searching */}
@@ -169,18 +242,35 @@ export const DrinksScreen: React.FC = () => {
           </View>
         }
       />
+
+      <FilterSheet
+        visible={filterVisible}
+        onClose={() => setFilterVisible(false)}
+        title={filterLabel}
+        groups={filterGroups}
+        activeFilters={activeSort}
+        onToggle={toggleSort}
+        onReset={() => setActiveSort([])}
+        resetLabel={resetLabel}
+      />
     </FadeInView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  searchBar: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
     marginTop: 10,
     marginBottom: 6,
+    gap: 10,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.cream,
     borderRadius: 12,
     borderWidth: 1,
@@ -196,6 +286,40 @@ const styles = StyleSheet.create({
     color: colors.primary,
     padding: 0,
     margin: 0,
+  },
+  filterBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: colors.cream,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBtnActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.accentMid,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: colors.surface,
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.white,
+    lineHeight: 12,
   },
   pillBar: {
     backgroundColor: colors.background,

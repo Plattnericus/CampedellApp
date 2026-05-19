@@ -10,6 +10,7 @@ import { typography } from '../theme/typography';
 import { FadeInView } from '../components/FadeInView';
 import { MenuItemCard } from '../components/MenuItemCard';
 import { SectionHeader } from '../components/SectionHeader';
+import { FilterSheet, FilterGroup } from '../components/FilterSheet';
 import { ItemDetailScreen } from './ItemDetailScreen';
 import { foodSections, FoodItem } from '../data/food';
 import { Translations } from '../i18n/de';
@@ -23,12 +24,16 @@ type SectionData = {
   data: FoodItem[];
 };
 
+type MenuFilter = 'vegan' | 'vegetarian' | 'no-gluten' | 'no-dairy' | 'no-nuts';
+
 export const MenuScreen: React.FC = () => {
   const { t, lang } = useLanguage();
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState('starters');
   const [query, setQuery] = useState('');
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<MenuFilter[]>([]);
   const listRef = useRef<SectionList<any>>(null);
 
   const allSections: SectionData[] = foodSections.map((s) => ({
@@ -40,10 +45,63 @@ export const MenuScreen: React.FC = () => {
     data: s.items,
   }));
 
+  const filterGroups: FilterGroup[] = useMemo(() => [
+    {
+      title: lang === 'de' ? 'Ernährung' : lang === 'it' ? 'Alimentazione' : 'Diet',
+      options: [
+        {
+          key: 'vegan',
+          label: 'Vegan',
+          icon: 'leaf',
+          iconColor: '#15803d',
+        },
+        {
+          key: 'vegetarian',
+          label: lang === 'de' ? 'Vegetarisch' : lang === 'it' ? 'Vegetariano' : 'Vegetarian',
+          icon: 'leaf-outline',
+          iconColor: '#15803d',
+        },
+      ],
+    },
+    {
+      title: lang === 'de' ? 'Ohne Allergene' : lang === 'it' ? 'Senza allergeni' : 'Allergen-free',
+      options: [
+        {
+          key: 'no-gluten',
+          label: lang === 'de' ? 'Glutenfrei' : lang === 'it' ? 'Senza glutine' : 'Gluten-free',
+        },
+        {
+          key: 'no-dairy',
+          label: lang === 'de' ? 'Laktosefrei' : lang === 'it' ? 'Senza lattosio' : 'Lactose-free',
+        },
+        {
+          key: 'no-nuts',
+          label: lang === 'de' ? 'Nussfrei' : lang === 'it' ? 'Senza noci' : 'Nut-free',
+        },
+      ],
+    },
+  ], [lang]);
+
   const sections: SectionData[] = useMemo(() => {
-    if (!query.trim()) return allSections;
+    let base = allSections;
+
+    if (activeFilters.length > 0) {
+      base = base.map((s) => ({
+        ...s,
+        data: s.data.filter((item) => {
+          if (activeFilters.includes('vegan') && !item.isVegan) return false;
+          if (activeFilters.includes('vegetarian') && !item.isVegetarian && !item.isVegan) return false;
+          if (activeFilters.includes('no-gluten') && item.allergens?.includes('gluten')) return false;
+          if (activeFilters.includes('no-dairy') && item.allergens?.includes('dairy')) return false;
+          if (activeFilters.includes('no-nuts') && item.allergens?.includes('nuts')) return false;
+          return true;
+        }),
+      })).filter((s) => s.data.length > 0);
+    }
+
+    if (!query.trim()) return base;
     const q = query.toLowerCase();
-    return allSections
+    return base
       .map((s) => ({
         ...s,
         data: s.data.filter(
@@ -53,7 +111,15 @@ export const MenuScreen: React.FC = () => {
         ),
       }))
       .filter((s) => s.data.length > 0);
-  }, [query, lang]);
+  }, [query, lang, activeFilters]);
+
+  const toggleFilter = (key: string) => {
+    setActiveFilters((prev) =>
+      prev.includes(key as MenuFilter)
+        ? prev.filter((f) => f !== key)
+        : [...prev, key as MenuFilter],
+    );
+  };
 
   const handleItemPress = (item: FoodItem) => {
     setSelectedItem(item);
@@ -69,26 +135,46 @@ export const MenuScreen: React.FC = () => {
     } catch {}
   };
 
+  const filterLabel = lang === 'de' ? 'Filter' : lang === 'it' ? 'Filtri' : 'Filter';
+  const resetLabel  = lang === 'de' ? 'Filter zurücksetzen' : lang === 'it' ? 'Reimposta filtri' : 'Reset filters';
+
   return (
     <FadeInView style={styles.container}>
-      {/* Search bar */}
-      <View style={styles.searchBar}>
-        <Ionicons name="search" size={16} color={colors.tertiary} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder={lang === 'de' ? 'Suchen…' : lang === 'it' ? 'Cerca…' : 'Search…'}
-          placeholderTextColor={colors.tertiary}
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="search"
+      {/* Search bar + filter button */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={16} color={colors.tertiary} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={lang === 'de' ? 'Suchen…' : lang === 'it' ? 'Cerca…' : 'Search…'}
+            placeholderTextColor={colors.tertiary}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={16} color={colors.tertiary} />
+            </Pressable>
+          )}
+        </View>
 
-          autoCorrect={false}
-        />
-        {query.length > 0 && (
-          <Pressable onPress={() => setQuery('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={16} color={colors.tertiary} />
-          </Pressable>
-        )}
+        <Pressable
+          style={[styles.filterBtn, activeFilters.length > 0 && styles.filterBtnActive]}
+          onPress={() => setFilterVisible(true)}
+        >
+          <Ionicons
+            name={activeFilters.length > 0 ? 'funnel' : 'funnel-outline'}
+            size={18}
+            color={activeFilters.length > 0 ? colors.white : colors.secondary}
+          />
+          {activeFilters.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{activeFilters.length}</Text>
+            </View>
+          )}
+        </Pressable>
       </View>
 
       {/* Category pills — hidden while searching */}
@@ -157,6 +243,17 @@ export const MenuScreen: React.FC = () => {
         }
       />
 
+      <FilterSheet
+        visible={filterVisible}
+        onClose={() => setFilterVisible(false)}
+        title={filterLabel}
+        groups={filterGroups}
+        activeFilters={activeFilters}
+        onToggle={toggleFilter}
+        onReset={() => setActiveFilters([])}
+        resetLabel={resetLabel}
+      />
+
       <ItemDetailScreen
         item={selectedItem}
         visible={modalVisible}
@@ -168,12 +265,18 @@ export const MenuScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  searchBar: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
     marginTop: 10,
     marginBottom: 6,
+    gap: 10,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.cream,
     borderRadius: 12,
     borderWidth: 1,
@@ -189,6 +292,40 @@ const styles = StyleSheet.create({
     color: colors.primary,
     padding: 0,
     margin: 0,
+  },
+  filterBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: colors.cream,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBtnActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.accentMid,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: colors.surface,
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.white,
+    lineHeight: 12,
   },
   pillBar: {
     paddingVertical: 8,

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Image, ImageBackground,
+  View, Text, StyleSheet, ScrollView, Pressable, Image, ImageBackground, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -8,9 +8,7 @@ import { useLanguage } from '../i18n';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { FadeInView } from '../components/FadeInView';
-import { foodSections } from '../data/food';
-import { drinkSections } from '../data/drinks';
-import { wineSections } from '../data/wines';
+import { useAppContent } from '../data/DataContext';
 
 type TabParamList = {
   Home: undefined;
@@ -52,14 +50,15 @@ const SECTION_LABELS: Record<string, Record<string, string>> = {
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { lang } = useLanguage();
+  const { foodSections, drinkSections, wineSections, loading, refreshData } = useAppContent();
   const w = WELCOME[lang] ?? WELCOME.de;
   const labels = SECTION_LABELS[lang] ?? SECTION_LABELS.de;
 
-  const totalDishes  = foodSections.reduce((n, s) => n + s.items.length, 0);
-  const totalDrinks  = drinkSections.reduce((n, s) => n + s.items.length, 0);
-  const totalWines   = wineSections.reduce((n, s) => n + s.wines.length, 0);
-  const drinkCats    = drinkSections.length;
-  const foodGangs    = foodSections.length;
+  const totalDishes  = foodSections?.reduce((n, s) => n + s.items.length, 0) || 0;
+  const totalDrinks  = drinkSections?.reduce((n, s) => n + s.items.length, 0) || 0;
+  const totalWines   = wineSections?.reduce((n, s) => n + s.wines.length, 0) || 0;
+  const drinkCats    = drinkSections?.length || 0;
+  const foodGangs    = foodSections?.length || 0;
 
   const menuCards = [
     {
@@ -104,8 +103,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
+      showsVerticalScrollIndicator={false}      refreshControl={
+        <RefreshControl refreshing={loading} onRefresh={refreshData} tintColor={colors.accent} />
+      }    >
       {/* Hero */}
       <FadeInView duration={500}>
         <View style={styles.heroWrap}>

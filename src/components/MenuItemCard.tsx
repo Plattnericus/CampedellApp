@@ -50,7 +50,9 @@ export const MenuItemCard: React.FC<Props> = ({
   });
 
   const formatPrice = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
-  const realImage = foodImages[item.image ?? item.id];
+  // Prefer remote imageUrl from API, fallback to local image map
+  const remoteUrl = (item as any).imageUrl || (item as any).imageUrlBig;
+  const localImage = foodImages[item.image ?? item.id];
 
   return (
     <Animated.View style={[styles.cardWrap, { transform: [{ scale }] }]}>
@@ -62,8 +64,10 @@ export const MenuItemCard: React.FC<Props> = ({
           style={styles.inner}
         >
           {/* Thumbnail */}
-          {realImage ? (
-            <Image source={realImage} style={styles.thumbImage} resizeMode="cover" />
+          {remoteUrl ? (
+            <Image source={{ uri: remoteUrl }} style={styles.thumbImage} resizeMode="cover" />
+          ) : localImage ? (
+            <Image source={localImage} style={styles.thumbImage} resizeMode="cover" />
           ) : (
             <LinearGradient
               colors={[gradientStart, gradientEnd] as const}

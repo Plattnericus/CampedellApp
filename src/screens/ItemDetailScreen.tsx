@@ -6,9 +6,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
-import { FoodItem, Allergen, foodSections } from '../data/food';
+import { FoodItem, Allergen } from '../data/food';
 import { foodImages } from '../data/imageMap';
 import { useLanguage, Language } from '../i18n';
+import { useAppContent } from '../data/DataContext';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 
@@ -49,6 +50,7 @@ interface Props {
 
 export const ItemDetailScreen: React.FC<Props> = ({ item, visible, onClose }) => {
   const { lang, t } = useLanguage();
+  const { foodSections } = useAppContent();
 
   const translateY = useRef(new Animated.Value(SH)).current;
   const bgOpacity  = useRef(new Animated.Value(0)).current;

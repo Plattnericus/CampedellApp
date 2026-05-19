@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, SectionList, ScrollView, Pressable,
-  TextInput,
+  TextInput, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../i18n';
@@ -12,7 +12,8 @@ import { MenuItemCard } from '../components/MenuItemCard';
 import { SectionHeader } from '../components/SectionHeader';
 import { FilterSheet, FilterGroup } from '../components/FilterSheet';
 import { ItemDetailScreen } from './ItemDetailScreen';
-import { foodSections, FoodItem } from '../data/food';
+import { FoodItem } from '../data/food';
+import { useAppContent } from '../data/DataContext';
 import { Translations } from '../i18n/de';
 
 type SectionData = {
@@ -28,6 +29,7 @@ type MenuFilter = 'vegan' | 'vegetarian' | 'no-gluten' | 'no-dairy' | 'no-nuts';
 
 export const MenuScreen: React.FC = () => {
   const { t, lang } = useLanguage();
+  const { foodSections, loading, refreshData } = useAppContent();
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState('starters');
@@ -36,14 +38,14 @@ export const MenuScreen: React.FC = () => {
   const [activeFilters, setActiveFilters] = useState<MenuFilter[]>([]);
   const listRef = useRef<SectionList<any>>(null);
 
-  const allSections: SectionData[] = foodSections.map((s) => ({
+  const allSections: SectionData[] = useMemo(() => foodSections.map((s) => ({
     id: s.id,
     categoryKey: s.categoryKey as keyof Translations['categories'],
     icon: s.icon,
     gradientStart: s.gradientStart,
     gradientEnd: s.gradientEnd,
     data: s.items,
-  }));
+  })), [foodSections]);
 
   const filterGroups: FilterGroup[] = useMemo(() => [
     {
@@ -138,6 +140,16 @@ export const MenuScreen: React.FC = () => {
   const filterLabel = lang === 'de' ? 'Filter' : lang === 'it' ? 'Filtri' : 'Filter';
   const resetLabel  = lang === 'de' ? 'Filter zurücksetzen' : lang === 'it' ? 'Reimposta filtri' : 'Reset filters';
 
+  // We no longer block the whole screen with a "Loading..." text if we have cache,
+  // we just show the refreshing spinner on the list itself.
+  if (loading && foodSections.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: colors.tertiary }}>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <FadeInView style={styles.container}>
       {/* Search bar + filter button */}
@@ -231,7 +243,7 @@ export const MenuScreen: React.FC = () => {
           if (top?.section) setActiveCategory((top.section as any).id);
         }}
         viewabilityConfig={{ itemVisiblePercentThreshold: 20 }}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, sections.length === 0 && { flex: 1, backgroundColor: colors.background }]}
         style={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
@@ -240,6 +252,9 @@ export const MenuScreen: React.FC = () => {
               {lang === 'de' ? 'Keine Ergebnisse' : lang === 'it' ? 'Nessun risultato' : 'No results'}
             </Text>
           </View>
+        }
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={refreshData} tintColor={colors.accent} />
         }
       />
 

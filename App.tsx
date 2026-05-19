@@ -6,14 +6,17 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LanguageProvider } from './src/i18n';
 import { AppNavigator } from './src/navigation';
+import { DataProvider } from './src/data/DataContext';
 
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <LanguageProvider>
-          <StatusBar style="dark" />
-          <AppNavigator />
+          <DataProvider>
+            <StatusBar style="dark" />
+            <AppNavigator />
+          </DataProvider>
         </LanguageProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -1,5 +1,3 @@
-import wineData from './wines.json';
-
 export type WineCategory = 'sparkling' | 'white' | 'red';
 
 export interface WinePrice {
@@ -42,5 +40,3 @@ export const WINE_CATEGORY_META: Record<WineCategory, {
   white:     { icon: 'wine-outline',  gradientStart: '#F3FCE8', gradientEnd: '#B5D99C' },
   red:       { icon: 'wine',          gradientStart: '#FCE4EC', gradientEnd: '#EF9A9A' },
 };
-
-export const wineSections: WineSection[] = (wineData as { sections: WineSection[] }).sections;

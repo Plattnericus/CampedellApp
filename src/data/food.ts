@@ -1,5 +1,3 @@
-import menuData from './menu.json';
-
 export type Allergen =
   | 'gluten' | 'dairy' | 'eggs' | 'nuts' | 'fish'
   | 'shellfish' | 'soy' | 'celery' | 'mustard' | 'sesame'
@@ -25,5 +23,3 @@ export interface FoodSection {
   gradientEnd: string;
   items: FoodItem[];
 }
-
-export const foodSections: FoodSection[] = (menuData as { sections: FoodSection[] }).sections;

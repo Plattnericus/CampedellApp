@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, SectionList, ScrollView, Pressable, TextInput,
+  View, Text, StyleSheet, SectionList, ScrollView, Pressable, TextInput, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../i18n';
@@ -9,7 +9,8 @@ import { typography } from '../theme/typography';
 import { FadeInView } from '../components/FadeInView';
 import { SectionHeader } from '../components/SectionHeader';
 import { FilterSheet, FilterGroup } from '../components/FilterSheet';
-import { drinkSections, DrinkItem } from '../data/drinks';
+import { DrinkItem } from '../data/drinks';
+import { useAppContent } from '../data/DataContext';
 import { Translations } from '../i18n/de';
 
 type DrinkSort = 'price-asc' | 'price-desc' | 'alpha';
@@ -69,17 +70,18 @@ const rowStyles = StyleSheet.create({
 
 export const DrinksScreen: React.FC = () => {
   const { t, lang } = useLanguage();
+  const { drinkSections, loading, refreshData } = useAppContent();
   const [activeCategory, setActiveCategory] = useState('hotDrinks');
   const [query, setQuery] = useState('');
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeSort, setActiveSort] = useState<DrinkSort[]>([]);
   const listRef = useRef<SectionList<any>>(null);
 
-  const allSections = drinkSections.map((s) => ({
+  const allSections = useMemo(() => drinkSections.map((s) => ({
     id: s.id,
     categoryKey: s.categoryKey as keyof Translations['categories'],
     data: s.items,
-  }));
+  })), [drinkSections]);
 
   const filterGroups: FilterGroup[] = useMemo(() => [
     {
@@ -150,7 +152,13 @@ export const DrinksScreen: React.FC = () => {
 
   const filterLabel = lang === 'de' ? 'Sortieren' : lang === 'it' ? 'Ordina' : 'Sort';
   const resetLabel  = lang === 'de' ? 'Sortierung zurücksetzen' : lang === 'it' ? 'Reimposta' : 'Reset';
-
+  if (loading && drinkSections.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: colors.tertiary }}>Loading...</Text>
+      </View>
+    );
+  }
   return (
     <FadeInView style={styles.container}>
       {/* Search bar + filter button */}
@@ -232,7 +240,8 @@ export const DrinksScreen: React.FC = () => {
           if (top?.section) setActiveCategory((top.section as any).id);
         }}
         viewabilityConfig={{ itemVisiblePercentThreshold: 20 }}
-        contentContainerStyle={styles.listContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.listContent, sections.length === 0 && { flex: 1 }]}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Ionicons name="search-outline" size={40} color={colors.border} />
@@ -240,6 +249,9 @@ export const DrinksScreen: React.FC = () => {
               {lang === 'de' ? 'Keine Ergebnisse' : lang === 'it' ? 'Nessun risultato' : 'No results'}
             </Text>
           </View>
+        }
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={refreshData} tintColor={colors.accent} />
         }
       />
 
@@ -342,7 +354,7 @@ const styles = StyleSheet.create({
   pillActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   pillText: { ...typography.caption1, color: colors.secondary, fontWeight: '500' },
   pillTextActive: { color: colors.white, fontWeight: '600' },
-  listContent: { backgroundColor: colors.surface, paddingBottom: 100 },
-  emptyWrap: { alignItems: 'center', paddingTop: 60, gap: 12, backgroundColor: colors.background },
+  listContent: { paddingBottom: 100 },
+  emptyWrap: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { ...typography.callout, color: colors.tertiary },
 });

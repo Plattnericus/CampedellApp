@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, Pressable, ScrollView, TextInput,
+  View, Text, StyleSheet, FlatList, Pressable, ScrollView, TextInput, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../i18n';
@@ -10,7 +10,8 @@ import { FadeInView } from '../components/FadeInView';
 import { WineCard } from '../components/WineCard';
 import { FilterSheet, FilterGroup } from '../components/FilterSheet';
 import { WineDetailScreen } from './WineDetailScreen';
-import { wineSections, WineCategory, Wine, WINE_CATEGORY_META } from '../data/wines';
+import { WineCategory, Wine, WINE_CATEGORY_META } from '../data/wines';
+import { useAppContent } from '../data/DataContext';
 
 const CATS: WineCategory[] = ['sparkling', 'white', 'red'];
 
@@ -18,6 +19,7 @@ type WineFilter = 'organic' | 'local' | 'trocken' | 'halbtrocken' | 'lieblich';
 
 export const WinesScreen: React.FC = () => {
   const { t, lang } = useLanguage();
+  const { wineSections, loading, refreshData } = useAppContent();
   const [activeTab, setActiveTab] = useState<WineCategory>('sparkling');
   const [query, setQuery] = useState('');
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
@@ -25,7 +27,7 @@ export const WinesScreen: React.FC = () => {
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeFilters, setActiveFilters] = useState<WineFilter[]>([]);
 
-  const allWines = wineSections.find((s) => s.category === activeTab)?.wines ?? [];
+  const allWines = useMemo(() => wineSections.find((s) => s.category === activeTab)?.wines ?? [], [wineSections, activeTab]);
 
   const filterGroups: FilterGroup[] = useMemo(() => [
     {
@@ -74,7 +76,7 @@ export const WinesScreen: React.FC = () => {
       data = data.filter((wine) => {
         if (activeFilters.includes('organic') && !wine.isOrganic) return false;
         if (activeFilters.includes('local') && !wine.isLocal) return false;
-        if (drynessFilters.length > 0 && !drynessFilters.includes(wine.dryness as WineFilter)) return false;
+        if (drynessFilters.length > 0 && !drynessFilters.includes(wine.dryness as any)) return false;
         return true;
       });
     }
@@ -110,6 +112,14 @@ export const WinesScreen: React.FC = () => {
 
   const filterLabel = lang === 'de' ? 'Filter' : lang === 'it' ? 'Filtri' : 'Filter';
   const resetLabel  = lang === 'de' ? 'Filter zurücksetzen' : lang === 'it' ? 'Reimposta filtri' : 'Reset filters';
+
+  if (loading && wineSections.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: colors.tertiary }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -196,16 +206,17 @@ export const WinesScreen: React.FC = () => {
           </FadeInView>
         )}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, wines.length === 0 && { flex: 1, backgroundColor: colors.background }]}
         ListEmptyComponent={
-          <View style={styles.emptyWrap}>
+          <View style={[styles.emptyWrap, { flex: 1, justifyContent: 'center', backgroundColor: colors.background }]}>
             <Ionicons name="wine-outline" size={40} color={colors.border} />
             <Text style={styles.emptyText}>
               {lang === 'de' ? 'Keine Ergebnisse' : lang === 'it' ? 'Nessun risultato' : 'No results'}
             </Text>
           </View>
-        }
-      />
+        }        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={refreshData} tintColor={colors.accent} />
+        }      />
 
       <FilterSheet
         visible={filterVisible}

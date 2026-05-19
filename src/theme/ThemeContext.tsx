@@ -59,7 +59,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         anim: new Animated.Value(0),
       };
 
-      setLayers((prev) => [...prev, newLayer]);
+      // Setze neue Layer _vor_ die alten ins Array,
+      // damit React sie früher rendert (also Z-Index technisch _unter_ den alten Layern).
+      // Dadurch kann eine neue Welle perfekt innerhalb des Loches einer alten Welle wachsen!
+      setLayers((prev) => [newLayer, ...prev]);
 
       setTimeout(() => {
         Animated.timing(newLayer.anim, {
@@ -92,12 +95,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 maskElement={
                   <Svg height={height} width={width} viewBox={`0 0 ${width} ${height}`}>
                     <Defs>
-                      <Mask id="mask">
+                      <Mask id={`mask-${layer.id}`}>
                         <Rect x="0" y="0" width={width} height={height} fill="white" />
                         <AnimatedCircle cx={layer.x} cy={layer.y} r={layer.anim} fill="black" />
                       </Mask>
                     </Defs>
-                    <Rect x="0" y="0" width={width} height={height} fill="white" mask="url(#mask)" />
+                    <Rect x="0" y="0" width={width} height={height} fill="white" mask={`url(#mask-${layer.id})`} />
                   </Svg>
                 }
               >

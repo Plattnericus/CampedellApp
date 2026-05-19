@@ -1,37 +1,86 @@
-# Campedel App
+# Campedèl App
 
-Digitale Speise- und Weinkarte für den Südtiroler Hofschank **Campedèl** auf der Seiser Alm.  
-Gebaut mit **Expo SDK 54** / React Native. Dreisprachig: Deutsch · Italiano · English.
+> Digitale Speise-, Getränke- und Weinkarte für den Südtiroler Hofschank **Campedèl** auf der Seiser Alm / Alpe di Siusi.  
+> Gebaut mit **Expo SDK 54 · React Native · TypeScript** — dreisprachig: Deutsch · Italiano · English.
+
+---
+
+## Screenshots
+
+| Home | Speisekarte | Getränke | Weinkarte |
+|------|-------------|----------|-----------|
+| Hero-Slideshow mit Ken-Burns-Zoom | Sektionsliste mit Suche & Filter | Horizontale Karussells pro Kategorie | Scrollbare Weinkarte mit Filtern |
 
 ---
 
 ## Features
 
-- Speise-, Wein- und Getränkekarte mit Detailansicht
-- Volltext-Suche in allen Karten
-- Allergenkennzeichnung nach EU-Norm
-- Dreisprachig (DE / IT / EN) – live umschaltbar im Header
-- Animierter Splash Screen
-- Natives iOS-Feeling: Blur-Tab-Bar, Haptic Feedback, Reanimated-Animationen
+### Inhalt & Daten
+- Alle Inhalte werden **live von der REST-API** geladen (`https://api-campedel.pokyh.com/api`)
+- **AsyncStorage-Cache** — beim App-Start frisch geladen, innerhalb einer Session aus dem Cache bedient
+- **Pull-to-Refresh** pro Screen mit eigenem lokalen Spinner-State (kein Cross-Screen-Bleed)
+- **API-Retry** mit exponentiellem Backoff (3 Versuche: 1 s → 2 s → 4 s)
+- **Bild-Retry** — bis zu 2 automatische Nachladeversuche bei fehlgeschlagenen Image-Requests
+
+### Navigation & UI
+- **Bottom-Tab-Navigation** (Home · Speisekarte · Getränke · Weinkarte)
+- **Blur-Tab-Bar** auf iOS (Glaseffekt via `expo-blur`)
+- **Tab-Switch-Fade** — jeder Screen blendet beim Fokus sanft ein
+- **Scroll-to-Top** beim Tab-Wechsel automatisch
+- **Dreisprachig** — DE / IT / EN live umschaltbar im Header ohne Reload
+
+### Screens
+
+#### Home
+- **Hero-Slideshow** mit echtem Crossfade (parallele Opacity-Animationen, kein Flicker)
+- **Ken-Burns-Zoom** (scale 1.0 → 1.08) während der Anzeigedauer
+- **Animierte Dot-Indikatoren** — Breite (6 px → 18 px) und Opacity per Animated.Value
+- Schnellzugriff-Karten zu allen Menükarten mit Live-Zählern aus der API
+
+#### Speisekarte
+- Sektionsliste mit scrollbaren **Kategorie-Pills** (auto-scroll zum aktiven Tab)
+- **Volltext-Suche** (Name, Beschreibung)
+- **Dynamische Filter** — vegan, vegetarisch, glutenfrei, laktosefrei, nussfrei
+- **Animierter Filter-Sheet** mit Spring-Bounce auf Chips und gestaffeltem Fade-in
+- **Detail-Bottom-Sheet** mit Pan-Gesture zum Schließen, Bild, Allergen-Badges
+- Items beim Filtern animiert neu eingeblendet (`FadeInView` mit Stagger)
+
+#### Getränke
+- **Horizontale Karussells** pro Kategorie mit `snapToInterval` für sauberes Scrollen
+- **Detail-Bottom-Sheet** mit Preisübersicht und Bild/Gradient-Fallback
+- **Dynamischer Filter** — Kategorien werden beim Start automatisch aus den API-Daten generiert, nichts hardgecoded
+
+#### Weinkarte
+- Einheitliche Scroll-Liste durch alle Kategorien (Sekt · Weißwein · Rotwein)
+- Suche nach Name, Weingut, Region, Beschreibung
+- Filter nach Bio, Lokal, Trocken/Halbtrocken/Lieblich
+- Detailseite mit Rebsorte, DOC, Preisen, Auszeichnungen
+
+### Animationen
+- Alles über die **React Native Animated API** (native Driver wo immer möglich)
+- Keine externen Animationsbibliotheken für Custom-Animationen
+- Bottom-Sheets mit Pan-Gesture + Spring-Animation zum Öffnen/Schließen
+- `FadeInView`-Komponente mit Opacity + TranslateY-Stagger für Listen-Items
 
 ---
 
-## Projekt starten
+## Tech Stack
 
-**Voraussetzungen:** Node.js ≥ 18, npm, Expo CLI
-
-```bash
-npm install
-npx expo start
-```
-
-Mit der **Expo Go** App scannen oder im Simulator/Emulator starten:
-
-```bash
-npx expo start --ios
-npx expo start --android
-npx expo start --web
-```
+| Schicht | Technologie |
+|---|---|
+| Framework | [Expo](https://expo.dev) ~54 (New Architecture aktiviert) |
+| Sprache | TypeScript ~5.9 |
+| Navigation | React Navigation 7 — Bottom Tabs + Native Stack |
+| Animationen | React Native `Animated` API |
+| Gesten | `react-native-gesture-handler` ~2.28 |
+| Persistenz | `@react-native-async-storage/async-storage` 2.2 |
+| Icons | `@expo/vector-icons` — Ionicons |
+| Blur / Glas | `expo-blur` ~15 |
+| Gradienten | `expo-linear-gradient` ~15 |
+| Haptics | `expo-haptics` ~15 |
+| SVG | `react-native-svg` 15 |
+| React | 19.1 |
+| React Native | 0.81.5 |
 
 ---
 
@@ -39,136 +88,172 @@ npx expo start --web
 
 ```
 CampedellApp/
-├── assets/                  # Bilder, Icons, Logo
+├── assets/
+│   ├── restaurant.jpg           # Hero-Bild 1
+│   ├── restaurant2.webp         # Hero-Bild 2
+│   ├── restaurant3.jpeg         # Hero-Bild 3
+│   ├── logo.png                 # App-Icon & Splash
+│   └── ...
 ├── src/
 │   ├── components/
-│   │   ├── AllergenBadge    # Allergen-Icons nach EU-Norm
-│   │   ├── CampedelLogo     # SVG-Logo
-│   │   ├── FadeInView       # Animierter Einblend-Wrapper
-│   │   ├── LanguageSwitcher # DE / IT / EN mit Slide-Animation
-│   │   ├── MenuItemCard     # Gerichts-Karte
-│   │   ├── SectionHeader    # Kategorieüberschrift
-│   │   └── WineCard         # Wein-Karte
+│   │   ├── AllergenBadge.tsx    Allergen-Icons nach EU-Norm
+│   │   ├── CampedelLogo.tsx     SVG-Logo-Komponente
+│   │   ├── FadeInView.tsx       Animierter Fade + Slide-Wrapper
+│   │   ├── FilterSheet.tsx      Animierter Bottom-Sheet für Filter
+│   │   ├── LanguageSwitcher.tsx DE / IT / EN mit Gleit-Pill
+│   │   ├── MenuItemCard.tsx     Speisekarten-Karte mit Bild-Retry
+│   │   ├── SectionHeader.tsx    Kategorie-Titelzeile
+│   │   └── WineCard.tsx         Weinkarten-Karte
 │   ├── data/
-│   │   ├── menu.json        # Speisekarte (editierbar)
-│   │   ├── wines.json       # Weinkarte (editierbar)
-│   │   ├── drinks.ts        # Getränkekarte
-│   │   ├── imageMap.ts      # Bildpfade Speisen
-│   │   └── wineImageMap.ts  # Bildpfade Weine
+│   │   ├── DataContext.tsx      Globaler Datenprovider (Fetch + Cache)
+│   │   ├── food.ts              FoodItem / FoodSection Typen
+│   │   ├── drinks.ts            DrinkItem / DrinkSection Typen
+│   │   └── wines.ts             Wine / WineSection / WineCategoryMeta Typen
 │   ├── i18n/
-│   │   ├── de.ts            # Deutsche Übersetzungen
-│   │   ├── it.ts            # Italienische Übersetzungen
-│   │   └── en.ts            # Englische Übersetzungen
-│   ├── navigation/          # AppNavigator (Stack + Bottom Tabs)
+│   │   ├── index.tsx            useLanguage Hook
+│   │   ├── de.ts                Deutsch (Translations-Typ-Quelle)
+│   │   ├── it.ts                Italiano
+│   │   └── en.ts                English
+│   ├── navigation/
+│   │   └── index.tsx            AppNavigator — Stack + Tabs + AppHeader
 │   ├── screens/
-│   │   ├── SplashScreen     # Animierter Startbildschirm
-│   │   ├── HomeScreen       # Startseite
-│   │   ├── MenuScreen       # Speisekarte mit Suche
-│   │   ├── DrinksScreen     # Getränkekarte
-│   │   ├── WinesScreen      # Weinkarte mit Suche
-│   │   ├── ItemDetailScreen # Detail-Modal Gerichte
-│   │   └── WineDetailScreen # Detail-Modal Weine
+│   │   ├── SplashScreen.tsx     Branded Ladebildschirm
+│   │   ├── HomeScreen.tsx       Startseite mit Hero-Slideshow
+│   │   ├── MenuScreen.tsx       Speisekarte
+│   │   ├── DrinksScreen.tsx     Getränkekarte
+│   │   ├── WinesScreen.tsx      Weinkarte
+│   │   ├── ItemDetailScreen.tsx Detail-Sheet für Speisen
+│   │   └── WineDetailScreen.tsx Detail-Sheet für Weine
+│   ├── services/
+│   │   └── apiService.ts        Fetch + Retry + AsyncStorage-Cache
 │   └── theme/
-│       ├── colors.ts        # Farbpalette (Burgund / Elfenbein)
-│       └── typography.ts    # iOS-Typografie-System
-├── App.tsx
-└── app.json
+│       ├── colors.ts            Alpine-Grün Farbpalette
+│       └── typography.ts        iOS-Typografie-System
+├── app.json                     Expo-Konfiguration
+├── package.json
+└── tsconfig.json
 ```
 
 ---
 
-## Inhalte anpassen
+## Schnellstart
 
-### Speisekarte (`src/data/menu.json`)
+### Voraussetzungen
 
-```json
-{
-  "id": "mein-gericht",
-  "name": { "de": "Mein Gericht", "it": "Il mio piatto", "en": "My dish" },
-  "description": {
-    "de": "Beschreibung auf Deutsch.",
-    "it": "Descrizione in italiano.",
-    "en": "Description in English."
-  },
-  "price": 18.90,
-  "allergens": ["gluten", "dairy"],
-  "isVegetarian": false,
-  "isVegan": false,
-  "image": "mein-gericht"
-}
+- [Node.js](https://nodejs.org) ≥ 18
+- [Expo CLI](https://docs.expo.dev/more/expo-cli/): `npm install -g expo-cli`
+- iOS Simulator (Xcode) **oder** Android Emulator **oder** [Expo Go](https://expo.dev/client) auf dem Gerät
+
+### Installation
+
+```bash
+git clone https://github.com/Nexor/CampedellApp.git
+cd CampedellApp
+npm install
 ```
 
-**Mögliche Allergene:** `gluten` · `dairy` · `eggs` · `nuts` · `fish` · `shellfish` · `soy` · `celery` · `mustard` · `sesame` · `sulphites` · `lupins` · `molluscs` · `peanuts`
+### Starten
 
-### Weinkarte (`src/data/wines.json`)
+```bash
+# Expo Dev-Server
+npm start
 
-```json
-{
-  "id": "mein-wein",
-  "name": "Mein Wein",
-  "winery": "Weingut Muster",
-  "region": "Südtirol / Alto Adige",
-  "doc": "Südtirol DOC",
-  "dryness": "trocken",
-  "grapes": ["CH", "PB"],
-  "description": {
-    "de": "Weinbeschreibung auf Deutsch.",
-    "it": "Descrizione del vino in italiano."
-  },
-  "prices": { "bottle": 30.00, "glass": 5.00 },
-  "awards": ["Falstaff 92/100"],
-  "isOrganic": false
-}
+# Direkt auf Plattform öffnen
+npm run ios
+npm run android
+npm run web
 ```
 
-**Kategorien:** `sparkling` · `white` · `red`
-
-**Rebsorten-Kürzel:** `CH` Chardonnay · `ME` Merlot · `LA` Lagrein · `CS` Cab. Sauvignon · `CF` Cab. Franc · `PN` Pinot Nero · `PB` Pinot Bianco · `SB` Sauvignon Blanc · `RI` Riesling · `VT` Vernatsch
-
-### Fotos hinzufügen
-
-1. Bild in `assets/food/` ablegen (z. B. `burger.jpg`)
-2. Eintrag in `src/data/imageMap.ts` ergänzen:
-   ```ts
-   burger: require('../../assets/food/burger.jpg'),
-   ```
-3. Im JSON beim Gericht setzen: `"image": "burger"`
-
-### Kategorien anpassen
-
-```json
-{
-  "id": "mains",
-  "categoryKey": "mains",
-  "icon": "restaurant",
-  "gradientStart": "#FFE0E0",
-  "gradientEnd": "#FF9090",
-  "items": [...]
-}
-```
-
-- `icon` – [Ionicons](https://ionic.io/ionicons)-Name
-- `gradientStart` / `gradientEnd` – Hintergrundfarbe für Thumbnails (Hex)
-- Neue Kategorienamen in `src/i18n/de.ts`, `it.ts`, `en.ts` eintragen
+> Port 8081 belegt? `npx expo start --port 8082`
 
 ---
 
-## Tech Stack
+## API
 
-| Paket | Version |
+Alle Daten kommen vom separaten Node.js / Express + SQLite Backend:
+
+```
+https://api-campedel.pokyh.com/api
+```
+
+| Endpunkt | Inhalt |
 |---|---|
-| Expo SDK | ~54 |
-| React Native | 0.81 |
-| TypeScript | ~5.9 |
-| React Navigation | 7 (Stack + Bottom Tabs) |
-| Reanimated | ~4.1 |
-| Gesture Handler | ~2.28 |
-| Expo Blur | ~15 |
-| Expo Haptics | ~15 |
-| Expo Linear Gradient | ~15 |
-| react-native-svg | 15 |
-| Ionicons | via @expo/vector-icons |
+| `GET /api/menu` | Speisekarte — Sektionen, Items, Preise, Allergene, Bilder |
+| `GET /api/drinks` | Getränke — Kategorien, Items, Preise, Bilder |
+| `GET /api/wines` | Weinkarte — Sektionen (sparkling/white/red), Weindaten |
+
+### Cache-Strategie
+
+```
+App-Start          → immer frisch von der API (forceRefresh = true)
+                     → Fallback auf Cache bei Netzwerkfehler
+Während der Session → Cache direkt, kein Netzwerkaufruf
+Pull-to-Refresh    → Nutzerausgelöst, lädt frisch und aktualisiert Cache
+```
+
+Cache-Keys: `campedel_menu_cache` · `campedel_drinks_cache` · `campedel_wines_cache`
 
 ---
 
-*Campedèl — Südtirol / Alto Adige*
+## Internationalisierung
+
+Die App unterstützt **Deutsch (de)**, **Italiano (it)** und **English (en)**.
+
+Der `Translations`-Typ ist in `src/i18n/de.ts` definiert. `it.ts` und `en.ts` implementieren dasselbe Interface — TypeScript meldet fehlende Schlüssel beim Kompilieren.
+
+Der Sprachwechsel ist über den Header-Switcher jederzeit live möglich ohne Neu-Laden.
+
+---
+
+## Theme
+
+Alle Farben sind in `src/theme/colors.ts` zentralisiert. Die Palette ist von der Südtiroler Berglandschaft inspiriert:
+
+| Token | Wert | Verwendung |
+|---|---|---|
+| `accent` | `#7EA13B` | Primärfarbe — Buttons, aktive Zustände, Icons |
+| `accentLight` | `#EEF5DC` | Hintergrundflächen mit Tint |
+| `accentDark` | `#587129` | Text auf hellem Hintergrund |
+| `accentMid` | `#6B8932` | Icons, Highlights |
+| `background` | `#FAF6F1` | Warmes Elfenbein — App-Hintergrund |
+| `surface` | `#FFFFFF` | Karten und Bottom-Sheets |
+| `primary` | `#1A1208` | Nahezu schwarzes Warmbraun — Überschriften |
+| `secondary` | `#4A3828` | Fließtext |
+| `tertiary` | `#9A8476` | Beschriftungen, sekundäre Labels |
+
+---
+
+## Production Build
+
+Die App nutzt den **Expo Managed Workflow**. Für einen Production-Build:
+
+```bash
+# EAS CLI installieren
+npm install -g eas-cli
+
+# Einmalig konfigurieren
+eas build:configure
+
+# iOS Production Build
+eas build --platform ios
+
+# Android Production Build
+eas build --platform android
+```
+
+Bundle-IDs:
+- iOS: `it.campedel.speisekarte`
+- Android: `it.campedel.speisekarte`
+
+---
+
+## Backend
+
+Das Backend-Repository (`campedel-backend`) wird separat gepflegt — Node.js · Express · SQLite.  
+Der API-Endpunkt ist in `src/services/apiService.ts` konfiguriert.
+
+---
+
+## Lizenz
+
+Privat — alle Rechte vorbehalten. © Campedèl, Seiser Alm, Südtirol / Alto Adige.

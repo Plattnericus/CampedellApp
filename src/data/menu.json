@@ -1,0 +1,430 @@
+{
+  "sections": [
+    {
+      "id": "starters",
+      "categoryKey": "starters",
+      "icon": "leaf-outline",
+      "gradientStart": "#FFF0CC",
+      "gradientEnd": "#FFD580",
+      "items": [
+        {
+          "id": "salat",
+          "name": { "de": "Gemischter Salat", "it": "Insalata mista", "en": "Mixed salad" },
+          "description": {
+            "de": "Frischer gemischter Blattsalat mit saisonalem Gemüse und hausgemachtem Dressing.",
+            "it": "Insalata mista fresca con verdure di stagione e condimento della casa.",
+            "en": "Fresh mixed leaf salad with seasonal vegetables and house dressing."
+          },
+          "price": 6.00,
+          "allergens": [],
+          "isVegetarian": true,
+          "isVegan": true
+        },
+        {
+          "id": "bretteljause",
+          "name": {
+            "de": "Bretteljause mit Speck und Käse",
+            "it": "Tagliere di speck con formaggi",
+            "en": "Speck and cheese platter"
+          },
+          "description": {
+            "de": "Hausgemachte Auswahl an Südtiroler Speck und regionalen Käsesorten auf einem Holzbrett serviert.",
+            "it": "Selezione artigianale di speck altoatesino e formaggi regionali serviti su tagliere di legno.",
+            "en": "Homemade selection of South Tyrolean speck and regional cheeses served on a wooden board."
+          },
+          "price": 15.90,
+          "allergens": ["dairy", "gluten"]
+        },
+        {
+          "id": "avocado",
+          "name": {
+            "de": "Avokado-Tomatentatar mit Burrata und Wildkräutersalat",
+            "it": "Tartare di avocado e pomodori con burrata",
+            "en": "Avocado tartare with burrata and wild herb salad"
+          },
+          "description": {
+            "de": "Frisches Avocado- und Tomatentatar auf samtiger Burrata, garniert mit einem Salat aus Wildkräutern.",
+            "it": "Tartare fresca di avocado e pomodori su burrata vellutata, guarnita con insalata di erbe selvatiche.",
+            "en": "Fresh avocado and tomato tartare on velvety burrata, garnished with a wild herb salad."
+          },
+          "price": 16.90,
+          "allergens": ["dairy"],
+          "isVegetarian": true
+        }
+      ]
+    },
+    {
+      "id": "soups",
+      "categoryKey": "soups",
+      "icon": "flame-outline",
+      "gradientStart": "#FFE8D0",
+      "gradientEnd": "#FFBA80",
+      "items": [
+        {
+          "id": "speckknodel",
+          "name": {
+            "de": "Speckknödelsuppe",
+            "it": "Canederli allo speck in brodo",
+            "en": "Speck dumpling soup"
+          },
+          "description": {
+            "de": "Hausgemachte Speckknödel in klarer Rindsbrühe, ein Südtiroler Klassiker.",
+            "it": "Canederli allo speck fatti in casa in brodo di manzo limpido.",
+            "en": "Homemade speck dumplings in clear beef broth, a South Tyrolean classic."
+          },
+          "price": 12.90,
+          "allergens": ["gluten", "eggs", "dairy"]
+        },
+        {
+          "id": "spargelsuppe",
+          "name": {
+            "de": "Spargelcremesuppe mit Brotcroutons",
+            "it": "Crema di asparagi con crostini di pane",
+            "en": "Cream of asparagus soup with croutons"
+          },
+          "description": {
+            "de": "Samtweiche Cremesuppe aus frischem Spargel, verfeinert mit knusprigen Brotcroutons.",
+            "it": "Crema vellutata di asparagi freschi, arricchita con crostini croccanti.",
+            "en": "Silky cream soup of fresh asparagus, refined with crispy bread croutons."
+          },
+          "price": 9.90,
+          "allergens": ["gluten", "dairy"],
+          "isVegetarian": true
+        }
+      ]
+    },
+    {
+      "id": "warmStarters",
+      "categoryKey": "warmStarters",
+      "icon": "restaurant-outline",
+      "gradientStart": "#D8F5E5",
+      "gradientEnd": "#7ECFA0",
+      "items": [
+        {
+          "id": "schlutzkrapfen",
+          "name": {
+            "de": "Hausgemachte Schlutzkrapfen mit Butter und Reibkäse",
+            "it": "Mezzelune fatte in casa con burro fuso e parmigiano",
+            "en": "Homemade Schlutzkrapfen with butter and grated cheese"
+          },
+          "description": {
+            "de": "Hausgemachte Halbmondtaschen mit Spinat und Ricotta in brauner Butter mit Parmesan.",
+            "it": "Mezzelune fatte in casa ripiene di spinaci e ricotta con burro fuso e parmigiano.",
+            "en": "Homemade half-moon pasta filled with spinach and ricotta, served in brown butter."
+          },
+          "price": 15.50,
+          "allergens": ["gluten", "eggs", "dairy"],
+          "isVegetarian": true
+        },
+        {
+          "id": "knoedeltris",
+          "name": {
+            "de": "Knödeltris mit Butter und Reibkäse",
+            "it": "Tris di canederli con burro fuso e parmigiano",
+            "en": "Trio of dumplings with butter and grated cheese"
+          },
+          "description": {
+            "de": "Drei verschiedene hausgemachte Knödel: Speck-, Spinat- und Käseknödel in brauner Butter.",
+            "it": "Tre canederli fatti in casa: allo speck, agli spinaci e al formaggio con burro fuso.",
+            "en": "Three different homemade dumplings: speck, spinach and cheese in brown butter."
+          },
+          "price": 16.50,
+          "allergens": ["gluten", "eggs", "dairy"]
+        },
+        {
+          "id": "tortelloni",
+          "name": {
+            "de": "Hausgemachte Tortelloni mit Ricottafüllung, Bärlauch und Spargelragout",
+            "it": "Tortelloni fatti in casa con ricotta, aglio orsino e ragù di asparagi",
+            "en": "Homemade tortelloni with ricotta, wild garlic and asparagus ragout"
+          },
+          "description": {
+            "de": "Zarte Tortelloni gefüllt mit Ricotta, angerichtet mit einem aromatischen Bärlauch-Spargelragout.",
+            "it": "Delicati tortelloni ripieni di ricotta con ragù aromatico di aglio orsino e asparagi.",
+            "en": "Delicate tortelloni filled with ricotta, served with wild garlic and asparagus ragout."
+          },
+          "price": 16.50,
+          "allergens": ["gluten", "eggs", "dairy"],
+          "isVegetarian": true
+        },
+        {
+          "id": "brennnesselrisotto",
+          "name": {
+            "de": "Brennnessel-Risotto mit frischem Spargel",
+            "it": "Risotto alle ortiche con asparagi freschi",
+            "en": "Nettle risotto with fresh asparagus"
+          },
+          "description": {
+            "de": "Cremiges Risotto mit jungen Brennnesseln und knackigen Spargelspitzen, verfeinert mit Parmesan.",
+            "it": "Risotto cremoso con ortiche giovani e punte di asparagi, raffinato con parmigiano.",
+            "en": "Creamy risotto with young nettles and crispy asparagus tips, refined with Parmesan."
+          },
+          "price": 16.90,
+          "allergens": ["dairy"],
+          "isVegetarian": true
+        }
+      ]
+    },
+    {
+      "id": "mains",
+      "categoryKey": "mains",
+      "icon": "restaurant",
+      "gradientStart": "#FFE0E0",
+      "gradientEnd": "#FF9090",
+      "items": [
+        {
+          "id": "entrecote",
+          "name": {
+            "de": "Entrecote vom Rind mit Kartoffelspalten und Kräuterbutter",
+            "it": "Entrecote con spicchi di patate e burro alle erbe",
+            "en": "Beef entrecote with potato wedges and herb butter"
+          },
+          "description": {
+            "de": "Zartes Entrecote vom Rind mit knusprigen Kartoffelspalten und hausgemachter Kräuterbutter.",
+            "it": "Tenero entrecote di manzo con spicchi di patate croccanti e burro alle erbe fatto in casa.",
+            "en": "Tender beef entrecote with crispy potato wedges and homemade herb butter."
+          },
+          "price": 28.50,
+          "allergens": ["dairy", "gluten"]
+        },
+        {
+          "id": "burger",
+          "name": {
+            "de": "\"Campedèl-Burger\" mit Fleisch vom eigenen Grauvieh",
+            "it": "\"Campedèl-Burger\" con carne dei nostri bovini",
+            "en": "\"Campedèl Burger\" with our own beef"
+          },
+          "description": {
+            "de": "Hausgemachter Burger mit Grauvieh-Fleisch, hausgemachtem Brot, Speck, Käse, Tomaten und Kartoffelspalten.",
+            "it": "Burger fatto in casa con carne bovina, pane fatto in casa, speck, formaggio, pomodori e spicchi di patate.",
+            "en": "Homemade burger with own beef, homemade bread, bacon, cheese, tomatoes and potato wedges."
+          },
+          "price": 18.90,
+          "allergens": ["gluten", "eggs", "dairy", "mustard"]
+        },
+        {
+          "id": "pfeffersteak",
+          "name": {
+            "de": "Pfeffersteak \"Campedèl\" mit Röstkartoffeln und gemischtem Salat",
+            "it": "Filetto al pepe \"Campedèl\" con patate arrosto e insalata mista",
+            "en": "\"Campedèl\" pepper steak with roasted potatoes and mixed salad"
+          },
+          "description": {
+            "de": "Zartes Pfeffersteak medium gebraten, mit Röstkartoffeln und einem frischen gemischten Salat.",
+            "it": "Tenero filetto al pepe, cotto a media cottura, con patate arrosto e insalata mista.",
+            "en": "Tender pepper steak cooked medium, with roasted potatoes and a fresh mixed salad."
+          },
+          "price": 34.00,
+          "allergens": ["sulphites"]
+        },
+        {
+          "id": "gulasch",
+          "name": {
+            "de": "Hofeigenes Rindsgulasch mit zwei Speckknödeln",
+            "it": "Gulasch di manzo della casa con due canederli allo speck",
+            "en": "Homemade beef goulash with two speck dumplings"
+          },
+          "description": {
+            "de": "Zartes Rindsgulasch vom eigenen Hof, geschmort mit Zwiebeln und Gewürzen, serviert mit zwei Speckknödeln.",
+            "it": "Tenero gulasch di manzo del maso, stufato con cipolle e spezie, con due canederli allo speck.",
+            "en": "Farm-own beef goulash braised with onions and spices, with two homemade speck dumplings."
+          },
+          "price": 19.50,
+          "allergens": ["gluten", "eggs", "celery"]
+        },
+        {
+          "id": "schnitzel",
+          "name": {
+            "de": "Wienerschnitzel vom Hofkalb mit Pommes und Preiselbeeren",
+            "it": "Cotoletta alla milanese di vitello del maso con patatine e mirtilli rossi",
+            "en": "Viennese schnitzel with French fries and cranberry jam"
+          },
+          "description": {
+            "de": "Klassisches Wienerschnitzel vom Hofkalb, goldbraun gebraten, mit Pommes und Preiselbeermararmelade.",
+            "it": "Classica cotoletta di vitello del maso, fritta dorata, con patatine e marmellata di mirtilli rossi.",
+            "en": "Classic farm veal schnitzel, golden fried, with French fries and homemade cranberry jam."
+          },
+          "price": 22.90,
+          "allergens": ["gluten", "eggs"]
+        },
+        {
+          "id": "spargel",
+          "name": {
+            "de": "Frische Stangenspargel mit Hausschinken und Bozner Sauce",
+            "it": "Asparagi bianchi freschi con prosciutto della casa e salsa bolzanina",
+            "en": "Fresh white asparagus with homemade ham and Bozner Sauce"
+          },
+          "description": {
+            "de": "Frische weiße Stangenspargel mit zart geräuchertem Hausschinken, Naturkartoffeln und der typischen Bozner Sauce.",
+            "it": "Asparagi bianchi freschi con prosciutto affumicato della casa, patate lesse e la tipica salsa bolzanina.",
+            "en": "Fresh white asparagus with delicately smoked homemade ham, boiled potatoes and Bolzano sauce."
+          },
+          "price": 23.90,
+          "allergens": ["eggs", "mustard", "dairy"]
+        }
+      ]
+    },
+    {
+      "id": "kids",
+      "categoryKey": "kids",
+      "icon": "happy-outline",
+      "gradientStart": "#FFF8CC",
+      "gradientEnd": "#FFE066",
+      "items": [
+        {
+          "id": "kids-schnitzel",
+          "name": {
+            "de": "Wienerschnitzel vom Hofkalb mit Pommes frites",
+            "it": "Cotoletta alla milanese di vitello con patatine fritte",
+            "en": "Viennese schnitzel with French fries"
+          },
+          "description": {
+            "de": "Zartes Kalbsschnitzel vom eigenen Hof, goldbraun gebraten, mit knusprigen Pommes frites.",
+            "it": "Tenera cotoletta di vitello del maso, fritta dorata, con patatine fritte croccanti.",
+            "en": "Tender farm veal schnitzel, golden fried, with crispy French fries."
+          },
+          "price": 15.00,
+          "allergens": ["gluten", "eggs"]
+        },
+        {
+          "id": "kids-spaghetti",
+          "name": {
+            "de": "Spaghetti mit Tomatensauce oder Ragù",
+            "it": "Spaghetti al pomodoro o ragù",
+            "en": "Spaghetti with tomato sauce or ragù"
+          },
+          "description": {
+            "de": "Hausgemachte Spaghetti mit frischer Tomatensauce oder saftigem Ragù vom Rind.",
+            "it": "Spaghetti fatti in casa con salsa di pomodoro fresca o ragù di manzo.",
+            "en": "Homemade spaghetti with fresh tomato sauce or hearty beef ragù."
+          },
+          "price": 9.50,
+          "allergens": ["gluten"],
+          "isVegetarian": true
+        },
+        {
+          "id": "kids-grillwurst",
+          "name": {
+            "de": "Grillwurst mit Pommes",
+            "it": "Würstel alla griglia con patatine fritte",
+            "en": "Grilled sausages with French fries"
+          },
+          "description": {
+            "de": "Saftige Grillwurst mit knusprigen Pommes frites.",
+            "it": "Würstel alla griglia succosi con patatine fritte croccanti.",
+            "en": "Juicy grilled sausage with crispy French fries."
+          },
+          "price": 9.50,
+          "allergens": ["gluten", "sulphites"]
+        },
+        {
+          "id": "kids-pommes",
+          "name": {
+            "de": "Pommes frites",
+            "it": "Patatine fritte",
+            "en": "French fries"
+          },
+          "description": {
+            "de": "Goldbraun gebackene knusprige Pommes frites.",
+            "it": "Patatine fritte croccanti e dorate.",
+            "en": "Golden crispy French fries."
+          },
+          "price": 6.00,
+          "allergens": [],
+          "isVegan": true,
+          "isVegetarian": true
+        }
+      ]
+    },
+    {
+      "id": "desserts",
+      "categoryKey": "desserts",
+      "icon": "heart-outline",
+      "gradientStart": "#FFE0F0",
+      "gradientEnd": "#FFB3D9",
+      "items": [
+        {
+          "id": "buchteln",
+          "name": {
+            "de": "Buchteln mit Vanillesauce",
+            "it": "\"Buchteln\" dolce tipico con crema alla vaniglia",
+            "en": "Buchteln (sweet yeast dumplings) with vanilla sauce"
+          },
+          "description": {
+            "de": "Lockere Buchteln aus Hefeteig, goldbraun gebacken, mit einer samtweichen Vanillesauce.",
+            "it": "Soffici buchteln di pasta lievitata, dorati in forno, con una crema alla vaniglia vellutata.",
+            "en": "Light yeast dumplings, golden baked, with a velvety vanilla sauce."
+          },
+          "price": 9.50,
+          "allergens": ["gluten", "eggs", "dairy"],
+          "isVegetarian": true
+        },
+        {
+          "id": "vanilleeis",
+          "name": {
+            "de": "Vanilleeis mit heißen Himbeeren",
+            "it": "Gelato alla vaniglia con lamponi caldi",
+            "en": "Vanilla ice cream with warm raspberries"
+          },
+          "description": {
+            "de": "Cremiges Vanilleeis mit einem Spiegel aus heißen, frischen Himbeeren.",
+            "it": "Gelato cremoso alla vaniglia con una salsa di lamponi freschi e caldi.",
+            "en": "Creamy vanilla ice cream with a pool of warm, fresh raspberries."
+          },
+          "price": 8.50,
+          "allergens": ["dairy", "eggs"],
+          "isVegetarian": true
+        },
+        {
+          "id": "sorbet",
+          "name": {
+            "de": "Zitronensorbet mit Limoncello",
+            "it": "Sorbetto al limone con Limoncello",
+            "en": "Lemon sorbet with Limoncello"
+          },
+          "description": {
+            "de": "Erfrischendes Zitronensorbet mit einem Schuss Limoncello.",
+            "it": "Rinfrescante sorbetto al limone con un tocco di Limoncello.",
+            "en": "Refreshing lemon sorbet with a splash of Limoncello."
+          },
+          "price": 7.90,
+          "allergens": ["sulphites"],
+          "isVegan": true,
+          "isVegetarian": true
+        },
+        {
+          "id": "apfelstrudel",
+          "name": {
+            "de": "Apfelstrudel mit Vanillesauce",
+            "it": "Strudel di mele con crema alla vaniglia",
+            "en": "Apple strudel with vanilla sauce"
+          },
+          "description": {
+            "de": "Hausgemachter Südtiroler Apfelstrudel mit knuspriger Teighülle, frischen Äpfeln und Vanillesauce.",
+            "it": "Strudel di mele altoatesino fatto in casa con pasta croccante, mele fresche e crema alla vaniglia.",
+            "en": "Homemade South Tyrolean apple strudel with crispy pastry, fresh apples and vanilla sauce."
+          },
+          "price": 5.90,
+          "allergens": ["gluten", "eggs", "dairy", "nuts"],
+          "isVegetarian": true
+        },
+        {
+          "id": "creme-brulee",
+          "name": {
+            "de": "Crème brûlée mit frischen Erdbeeren",
+            "it": "Crème brûlée con fragole fresche",
+            "en": "Crème brûlée with fresh strawberries"
+          },
+          "description": {
+            "de": "Klassische Crème brûlée mit knuspriger Karamellkruste und frischen Erdbeeren.",
+            "it": "Classica crème brûlée con croccante crosta di caramello e fragole fresche.",
+            "en": "Classic crème brûlée with a crispy caramel crust and fresh strawberries."
+          },
+          "price": 7.90,
+          "allergens": ["dairy", "eggs"],
+          "isVegetarian": true
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { View, Animated, StyleSheet, Image, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ViewShot from 'react-native-view-shot';
 import MaskedView from '@react-native-masked-view/masked-view';
+import Svg, { Defs, Mask, Rect, Circle } from 'react-native-svg';
 
 interface ThemeCtx {
   isDark: boolean;
@@ -18,13 +19,20 @@ const STORAGE_KEY = 'campedel_theme';
 const { width, height } = Dimensions.get('window');
 const MAX_RADIUS = Math.sqrt(width * width + height * height);
 
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+type SnapshotLayer = {
+  id: number;
+  uri: string;
+  x: number;
+  y: number;
+  anim: Animated.Value;
+};
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
-  const [snapshotUri, setSnapshotUri] = useState<string | null>(null);
-  
+  const [layers, setLayers] = useState<SnapshotLayer[]>([]);
   const viewShotRef = useRef<ViewShot>(null);
-  const maskRadius = useRef(new Animated.Value(MAX_RADIUS)).current;
-  const [origin, setOrigin] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((val) => {
@@ -34,92 +42,71 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const toggleTheme = async (x: number = 0, y: number = 0) => {
     try {
-      // 1. Snapshot the CURRENT screen (even if mid-transition, this bakes the rings together!)
       const uri = await viewShotRef.current?.capture?.();
-      if (!uri) throw new Error('Snapshot failed');
+      if (!uri) return;
 
-      // 2. We instantly switch the theme behind the scenes
       setIsDark((prev) => {
         const next = !prev;
         AsyncStorage.setItem(STORAGE_KEY, next ? 'dark' : 'light');
         return next;
       });
 
-      // 3. Keep the snapshot in the background, set new origin
-      setSnapshotUri(uri);
-      setOrigin({ x, y });
-      
-      // Stop previous expansion and immediately shrink the mask to 0 at the new coords
-      maskRadius.stopAnimation();
-      maskRadius.setValue(0);
-      
-      // 4. Start the new wave immediately (this allows "spamming" beautifully!)
-      requestAnimationFrame(() => {
-        Animated.timing(maskRadius, {
+      const newLayer: SnapshotLayer = {
+        id: Date.now() + Math.random(),
+        uri,
+        x,
+        y,
+        anim: new Animated.Value(0),
+      };
+
+      setLayers((prev) => [...prev, newLayer]);
+
+      setTimeout(() => {
+        Animated.timing(newLayer.anim, {
           toValue: MAX_RADIUS,
-          duration: 700,
-          useNativeDriver: true,
-        }).start(({ finished }) => {
-          // Only clear if this animation wasn't interrupted by a new spam click
-          if (finished) {
-            setSnapshotUri(null);
-          }
+          duration: 600,
+          useNativeDriver: false, // Must be false for SVG radius animation
+        }).start(() => {
+          setLayers((prev) => prev.filter((l) => l.id !== newLayer.id));
         });
-      });
+      }, 40);
+
     } catch (e) {
       console.warn('Mask transition failed', e);
-      // Fallback
       setIsDark((prev) => !prev);
     }
   };
 
-  const maskScale = maskRadius.interpolate({
-    inputRange: [0, MAX_RADIUS],
-    outputRange: [0, 1],
-  });
-
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>
-      {/* 
-        Background layer: The snapshot (old UI). 
-        If spammed, this image literally contains the 'frozen' half-transitioned wave!
-      */}
-      {snapshotUri && (
-        <Image
-          source={{ uri: snapshotUri }}
-          style={StyleSheet.absoluteFillObject}
-          fadeDuration={0}
-        />
-      )}
-      
-      <MaskedView
-        style={StyleSheet.absoluteFill}
-        pointerEvents="box-none"
-        maskElement={
-          <View style={StyleSheet.absoluteFill}>
-            {snapshotUri ? (
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  left: origin.x - MAX_RADIUS,
-                  top: origin.y - MAX_RADIUS,
-                  width: MAX_RADIUS * 2,
-                  height: MAX_RADIUS * 2,
-                  borderRadius: MAX_RADIUS,
-                  backgroundColor: 'black',
-                  transform: [{ scale: maskScale }],
-                }}
-              />
-            ) : (
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'black' }]} />
-            )}
-          </View>
-        }
-      >
-        <ViewShot ref={viewShotRef} style={{ flex: 1 }} options={{ format: 'jpg', quality: 0.8 }}>
+      <View style={{ flex: 1 }}>
+        <ViewShot ref={viewShotRef} style={{ flex: 1 }} options={{ format: 'jpg', quality: 0.6 }}>
           {children}
         </ViewShot>
-      </MaskedView>
+
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {layers.map((layer) => (
+            <View key={layer.id} style={StyleSheet.absoluteFill}>
+              <MaskedView
+                style={StyleSheet.absoluteFill}
+                maskElement={
+                  <Svg height={height} width={width} viewBox={`0 0 ${width} ${height}`}>
+                    <Defs>
+                      <Mask id="mask">
+                        <Rect x="0" y="0" width={width} height={height} fill="white" />
+                        <AnimatedCircle cx={layer.x} cy={layer.y} r={layer.anim} fill="black" />
+                      </Mask>
+                    </Defs>
+                    <Rect x="0" y="0" width={width} height={height} fill="white" mask="url(#mask)" />
+                  </Svg>
+                }
+              >
+                <Image source={{ uri: layer.uri }} style={StyleSheet.absoluteFillObject} fadeDuration={0} />
+              </MaskedView>
+            </View>
+          ))}
+        </View>
+      </View>
     </ThemeContext.Provider>
   );
 };

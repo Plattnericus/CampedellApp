@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, Modal, Pressable,
-  Animated, ScrollView, PanResponder, Dimensions, Image,
+  Animated, Dimensions, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { Wine, WineCategory, WINE_CATEGORY_META } from '../data/wines';
 import { wineImages } from '../data/wineImageMap';
 import { useLanguage } from '../i18n';
@@ -13,6 +14,8 @@ import { typography } from '../theme/typography';
 
 const SH = Dimensions.get('window').height;
 const HERO_H = 210;
+const CLOSE_THRESHOLD = 130;
+const CLOSE_VELOCITY  = 800;
 
 const GRAPE_FULL: Record<string, string> = {
   CH: 'Chardonnay', ME: 'Merlot', LA: 'Lagrein', CS: 'Cab. Sauvignon',
@@ -36,14 +39,18 @@ interface Props {
 
 export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onClose }) => {
   const { lang } = useLanguage();
+
   const translateY = useRef(new Animated.Value(SH)).current;
   const bgOpacity  = useRef(new Animated.Value(0)).current;
-  const dragY      = useRef(new Animated.Value(0)).current;
+  const scrollY    = useRef(0);
+  const isDragging = useRef(false);
+  const lastDragY  = useRef(0);
 
+  // ── Open animation ────────────────────────────────────────────────────────
   useEffect(() => {
     if (visible) {
       translateY.setValue(SH);
-      dragY.setValue(0);
+      bgOpacity.setValue(0);
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0, friction: 9, tension: 65, useNativeDriver: true,
@@ -55,10 +62,11 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
     }
   }, [visible]);
 
-  const close = () => {
+  // ── Dismiss ───────────────────────────────────────────────────────────────
+  const dismiss = () => {
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: SH, duration: 340, useNativeDriver: true,
+        toValue: SH, duration: 300, useNativeDriver: true,
       }),
       Animated.timing(bgOpacity, {
         toValue: 0, duration: 240, useNativeDriver: true,
@@ -66,164 +74,208 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
     ]).start(onClose);
   };
 
-  const pan = PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => g.dy > 10 && Math.abs(g.dy) > Math.abs(g.dx),
-    onPanResponderMove: (_, g) => { if (g.dy > 0) dragY.setValue(g.dy); },
-    onPanResponderRelease: (_, g) => {
-      if (g.dy > 80 || g.vy > 1.5) {
-        close();
-      } else {
-        Animated.spring(dragY, { toValue: 0, useNativeDriver: true, friction: 8 }).start();
-      }
-    },
-  });
+  // ── Snap back open ────────────────────────────────────────────────────────
+  const snapBack = () => {
+    Animated.parallel([
+      Animated.spring(translateY, {
+        toValue: 0, friction: 10, tension: 120, useNativeDriver: true,
+      }),
+      Animated.timing(bgOpacity, {
+        toValue: 1, duration: 200, useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
+  // ── Gestures ──────────────────────────────────────────────────────────────
+  const nativeGesture = Gesture.Native();
+
+  const panGesture = Gesture.Pan()
+    .runOnJS(true)
+    .simultaneousWithExternalGesture(nativeGesture)
+    .onStart(() => {
+      isDragging.current = false;
+      lastDragY.current = 0;
+    })
+    .onUpdate((e) => {
+      if (!isDragging.current) {
+        if (e.translationY > 0 && scrollY.current <= 1) {
+          isDragging.current = true;
+          translateY.stopAnimation();
+          bgOpacity.stopAnimation();
+        } else {
+          return;
+        }
+      }
+      const dy = Math.max(0, e.translationY * 0.92);
+      lastDragY.current = dy;
+      translateY.setValue(dy);
+      bgOpacity.setValue(Math.max(0, 1 - dy / (SH * 0.5)));
+    })
+    .onEnd((e) => {
+      if (isDragging.current) {
+        if (lastDragY.current > CLOSE_THRESHOLD || e.velocityY > CLOSE_VELOCITY) {
+          dismiss();
+        } else {
+          snapBack();
+        }
+      }
+      isDragging.current = false;
+    });
+
+  // ── Guard ─────────────────────────────────────────────────────────────────
   if (!wine) return null;
 
-  const fmt = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
-  const meta = WINE_CATEGORY_META[category];
+  const fmt       = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
+  const meta      = WINE_CATEGORY_META[category];
   const realImage = wineImages[wine.image ?? wine.id];
-  const desc = wine.description[lang === 'en' ? 'de' : lang as 'de' | 'it'];
+  const desc      = wine.description[lang === 'en' ? 'de' : lang as 'de' | 'it'];
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={dismiss}>
       <View style={styles.overlay}>
+
+        {/* Backdrop */}
         <Animated.View style={[styles.backdrop, { opacity: bgOpacity }]}>
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={close} />
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={dismiss} />
         </Animated.View>
 
-        <Animated.View
-          style={[
-            styles.sheet,
-            { transform: [{ translateY: Animated.add(translateY, dragY) }] },
-          ]}
-        >
-          {/* Drag handle */}
-          <View {...pan.panHandlers} style={styles.handleArea}>
-            <View style={styles.handle} />
-          </View>
+        {/* Sheet */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
 
-          {/* Header */}
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle} numberOfLines={2}>{wine.name}</Text>
-            <Pressable style={styles.closeBtn} onPress={close}>
-              <Ionicons name="close" size={18} color={colors.secondary} />
-            </Pressable>
-          </View>
-
-          {/* Hero */}
-          {realImage ? (
-            <Image source={realImage} style={styles.heroImage} resizeMode="cover" />
-          ) : (
-            <LinearGradient
-              colors={[meta.gradientStart, meta.gradientEnd] as const}
-              style={styles.heroGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Ionicons name={meta.icon as any} size={72} color="rgba(255,255,255,0.9)" />
-            </LinearGradient>
-          )}
-
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            {/* Winery + region */}
-            <Text style={styles.winery}>{wine.winery}</Text>
-            <Text style={styles.region}>{wine.region}{wine.doc ? ` · ${wine.doc}` : ''}</Text>
-
-            {/* Dryness + organic badges */}
-            <View style={styles.badgeRow}>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{DRYNESS_LABEL[lang]?.[wine.dryness] ?? wine.dryness}</Text>
-              </View>
-              {wine.isOrganic && (
-                <View style={[styles.badge, styles.organicBadge]}>
-                  <Ionicons name="leaf" size={11} color="#15803d" />
-                  <Text style={[styles.badgeText, { color: '#15803d' }]}>Bio</Text>
-                </View>
-              )}
-              {wine.isLocal && (
-                <View style={[styles.badge, styles.localBadge]}>
-                  <Ionicons name="location" size={11} color={colors.accentDark} />
-                  <Text style={[styles.badgeText, { color: colors.accentDark }]}>Lokal</Text>
-                </View>
-              )}
+            {/* Drag handle pill */}
+            <View style={styles.handleArea}>
+              <View style={styles.handle} />
             </View>
 
-            {/* Grapes */}
-            {wine.grapes && wine.grapes.length > 0 && (
-              <View style={styles.grapeRow}>
-                {wine.grapes.map((g) => (
-                  <View key={g} style={styles.grapeChip}>
-                    <Text style={styles.grapeText}>{GRAPE_FULL[g] ?? g}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Description */}
-            {desc ? (
-              <Text style={styles.desc}>{desc}</Text>
-            ) : null}
-
-            {/* Prices */}
-            <View style={styles.priceSection}>
-              <Text style={styles.priceSectionTitle}>Preise</Text>
-              {wine.prices.bottle && (
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Flasche</Text>
-                  <Text style={styles.priceValue}>{fmt(wine.prices.bottle)}</Text>
-                </View>
-              )}
-              {wine.prices.glass && (
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Glas (0,2 l)</Text>
-                  <Text style={styles.priceValue}>{fmt(wine.prices.glass)}</Text>
-                </View>
-              )}
-              {wine.prices.quarterLiter && (
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>¼ Liter</Text>
-                  <Text style={styles.priceValue}>{fmt(wine.prices.quarterLiter)}</Text>
-                </View>
-              )}
-              {wine.prices.halfLiter && (
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>½ Liter</Text>
-                  <Text style={styles.priceValue}>{fmt(wine.prices.halfLiter)}</Text>
-                </View>
-              )}
-              {wine.prices.liter && (
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>1 Liter</Text>
-                  <Text style={styles.priceValue}>{fmt(wine.prices.liter)}</Text>
-                </View>
-              )}
+            {/* Header */}
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle} numberOfLines={2}>{wine.name}</Text>
+              <Pressable style={styles.closeBtn} onPress={dismiss}>
+                <Ionicons name="close" size={18} color={colors.secondary} />
+              </Pressable>
             </View>
 
-            {/* Awards */}
-            {wine.awards && wine.awards.length > 0 && (
-              <View style={styles.awardsSection}>
-                <View style={styles.awardHeader}>
-                  <Ionicons name="ribbon" size={14} color={colors.accent} />
-                  <Text style={styles.awardTitle}>Auszeichnungen</Text>
-                </View>
-                {wine.awards.map((a, i) => (
-                  <View key={i} style={styles.awardRow}>
-                    <View style={styles.dot} />
-                    <Text style={styles.awardText}>{a}</Text>
-                  </View>
-                ))}
-              </View>
+            {/* Hero */}
+            {realImage ? (
+              <Image source={realImage} style={styles.heroImage} resizeMode="cover" />
+            ) : (
+              <LinearGradient
+                colors={[meta.gradientStart, meta.gradientEnd] as const}
+                style={styles.heroGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name={meta.icon as any} size={72} color="rgba(255,255,255,0.9)" />
+              </LinearGradient>
             )}
 
-            <View style={{ height: 48 }} />
-          </ScrollView>
-        </Animated.View>
+            {/* Scrollable content */}
+            <GestureDetector gesture={nativeGesture}>
+              <GHScrollView
+                style={styles.scroll}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                scrollEventThrottle={16}
+                onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
+              >
+                {/* Winery + region */}
+                <Text style={styles.winery}>{wine.winery}</Text>
+                <Text style={styles.region}>{wine.region}{wine.doc ? ` · ${wine.doc}` : ''}</Text>
+
+                {/* Dryness + organic badges */}
+                <View style={styles.badgeRow}>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {DRYNESS_LABEL[lang]?.[wine.dryness] ?? wine.dryness}
+                    </Text>
+                  </View>
+                  {wine.isOrganic && (
+                    <View style={[styles.badge, styles.organicBadge]}>
+                      <Ionicons name="leaf" size={11} color="#15803d" />
+                      <Text style={[styles.badgeText, { color: '#15803d' }]}>Bio</Text>
+                    </View>
+                  )}
+                  {wine.isLocal && (
+                    <View style={[styles.badge, styles.localBadge]}>
+                      <Ionicons name="location" size={11} color={colors.accentDark} />
+                      <Text style={[styles.badgeText, { color: colors.accentDark }]}>Lokal</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Grape varieties */}
+                {wine.grapes && wine.grapes.length > 0 && (
+                  <View style={styles.grapeRow}>
+                    {wine.grapes.map((g) => (
+                      <View key={g} style={styles.grapeChip}>
+                        <Text style={styles.grapeText}>{GRAPE_FULL[g] ?? g}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Description */}
+                {desc ? <Text style={styles.desc}>{desc}</Text> : null}
+
+                {/* Prices */}
+                <View style={styles.priceSection}>
+                  <Text style={styles.priceSectionTitle}>Preise</Text>
+                  {wine.prices.bottle && (
+                    <View style={styles.priceRow}>
+                      <Text style={styles.priceLabel}>Flasche</Text>
+                      <Text style={styles.priceValue}>{fmt(wine.prices.bottle)}</Text>
+                    </View>
+                  )}
+                  {wine.prices.glass && (
+                    <View style={styles.priceRow}>
+                      <Text style={styles.priceLabel}>Glas (0,2 l)</Text>
+                      <Text style={styles.priceValue}>{fmt(wine.prices.glass)}</Text>
+                    </View>
+                  )}
+                  {wine.prices.quarterLiter && (
+                    <View style={styles.priceRow}>
+                      <Text style={styles.priceLabel}>¼ Liter</Text>
+                      <Text style={styles.priceValue}>{fmt(wine.prices.quarterLiter)}</Text>
+                    </View>
+                  )}
+                  {wine.prices.halfLiter && (
+                    <View style={styles.priceRow}>
+                      <Text style={styles.priceLabel}>½ Liter</Text>
+                      <Text style={styles.priceValue}>{fmt(wine.prices.halfLiter)}</Text>
+                    </View>
+                  )}
+                  {wine.prices.liter && (
+                    <View style={styles.priceRow}>
+                      <Text style={styles.priceLabel}>1 Liter</Text>
+                      <Text style={styles.priceValue}>{fmt(wine.prices.liter)}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Awards */}
+                {wine.awards && wine.awards.length > 0 && (
+                  <View style={styles.awardsSection}>
+                    <View style={styles.awardHeader}>
+                      <Ionicons name="ribbon" size={14} color={colors.accent} />
+                      <Text style={styles.awardTitle}>Auszeichnungen</Text>
+                    </View>
+                    {wine.awards.map((a, i) => (
+                      <View key={i} style={styles.awardRow}>
+                        <View style={styles.dot} />
+                        <Text style={styles.awardText}>{a}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                <View style={{ height: 48 }} />
+              </GHScrollView>
+            </GestureDetector>
+
+          </Animated.View>
+        </GestureDetector>
       </View>
     </Modal>
   );
@@ -339,15 +391,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  priceLabel: {
-    ...typography.callout,
-    color: colors.secondary,
-  },
-  priceValue: {
-    ...typography.callout,
-    color: colors.accent,
-    fontWeight: '700',
-  },
+  priceLabel: { ...typography.callout, color: colors.secondary },
+  priceValue: { ...typography.callout, color: colors.accent, fontWeight: '700' },
   awardsSection: {
     backgroundColor: colors.accentLight,
     borderRadius: 16, padding: 16, gap: 8,
@@ -363,11 +408,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  awardRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-  },
-  dot: {
-    width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.accent,
-  },
+  awardRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.accent },
   awardText: { ...typography.callout, color: colors.secondary, flex: 1 },
 });

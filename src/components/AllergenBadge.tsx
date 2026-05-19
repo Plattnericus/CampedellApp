@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Allergen } from '../data/food';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 
 const ABBR: Record<Allergen, string> = {
   gluten: 'G', dairy: 'D', eggs: 'E', nuts: 'N', fish: 'F',
@@ -12,12 +12,13 @@ const ABBR: Record<Allergen, string> = {
 interface Props { allergens: Allergen[] }
 
 export const AllergenBadge: React.FC<Props> = ({ allergens }) => {
+  const c = useColors();
   if (!allergens || allergens.length === 0) return null;
   return (
     <View style={styles.row}>
       {allergens.map((a) => (
-        <View key={a} style={styles.badge}>
-          <Text style={styles.text}>{ABBR[a]}</Text>
+        <View key={a} style={[styles.badge, { backgroundColor: c.accentLight }]}>
+          <Text style={[styles.text, { color: c.accentDark }]}>{ABBR[a]}</Text>
         </View>
       ))}
     </View>
@@ -27,14 +28,12 @@ export const AllergenBadge: React.FC<Props> = ({ allergens }) => {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 7 },
   badge: {
-    backgroundColor: colors.accentLight,
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   text: {
     fontSize: 10, fontWeight: '700',
-    color: colors.accentDark,
     letterSpacing: 0.3,
   },
 });

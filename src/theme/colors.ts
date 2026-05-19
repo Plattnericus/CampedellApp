@@ -1,31 +1,65 @@
-export const colors = {
-  // Core backgrounds — warm ivory tones (Südtirol / natural feel)
-  background: '#FAF6F1',     // warm ivory – main app background
-  surface:    '#FFFFFF',     // pure white – cards & bottom sheets
-  cream:      '#F2EAE0',     // warm cream – pill backgrounds, inactive states
-  creamDark:  '#E5D7CA',     // deeper cream – pressed states
+import { useTheme } from './ThemeContext';
 
-  // Brand / accent — mountain green (Südtirol alpine feel)
-  accent:      '#7EA13B',    // fresh green – primary brand color
-  accentLight: '#EEF5DC',    // very light green – tint backgrounds
-  accentDark:  '#587129',    // dark forest green – text on light backgrounds
-  accentMid:   '#6B8932',    // medium green – icons, highlights
+export const lightColors = {
+  background: '#FAF6F1',
+  surface:    '#FFFFFF',
+  cream:      '#F2EAE0',
+  creamDark:  '#E5D7CA',
 
-  // Text — warm dark brown tones (warm, readable, not cold black)
-  primary:   '#1A1208',      // near-black warm brown – headings & titles
-  secondary: '#4A3828',      // warm medium brown – body text
-  tertiary:  '#9A8476',      // warm taupe – captions, secondary labels
+  accent:      '#7EA13B',
+  accentLight: '#EEF5DC',
+  accentDark:  '#587129',
+  accentMid:   '#6B8932',
 
-  // Borders & dividers
-  border:      '#DDD0C4',    // warm beige border
-  borderLight: '#EDE4DC',    // very subtle warm divider
+  primary:   '#1A1208',
+  secondary: '#4A3828',
+  tertiary:  '#9A8476',
 
-  // Utility
+  border:      '#DDD0C4',
+  borderLight: '#EDE4DC',
+
   white:   '#FFFFFF',
   black:   '#000000',
   overlay: 'rgba(26, 18, 8, 0.50)',
 
-  // Semantic
   success: '#2D6A4F',
   error:   '#C0392B',
 } as const;
+
+export const darkColors = {
+  background: '#1A1208',
+  surface:    '#251A0C',
+  cream:      '#2E2010',
+  creamDark:  '#3A2A1A',
+
+  accent:      '#90BC40',
+  accentLight: '#243210',
+  accentDark:  '#7EA13B',
+  accentMid:   '#7EA13B',
+
+  primary:   '#F5EDE0',
+  secondary: '#C4A882',
+  tertiary:  '#7A6A54',
+
+  border:      '#3C2C1C',
+  borderLight: '#2E2010',
+
+  white:   '#FFFFFF',
+  black:   '#000000',
+  overlay: 'rgba(0, 0, 0, 0.65)',
+
+  success: '#3A8A60',
+  error:   '#D44030',
+} as const;
+
+// Static export kept for backward compat (always light)
+export const colors = lightColors;
+
+export type AppColors = {
+  readonly [K in keyof typeof lightColors]: string;
+};
+
+export const useColors = (): AppColors => {
+  const { isDark } = useTheme();
+  return (isDark ? darkColors : lightColors) as AppColors;
+};

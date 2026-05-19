@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, Animated, Image } from 'react-native
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { useLanguage } from '../i18n';
 import { FoodItem } from '../data/food';
@@ -25,6 +25,7 @@ export const MenuItemCard: React.FC<Props> = ({
   gradientEnd,
 }) => {
   const { lang } = useLanguage();
+  const c = useColors();
   const scale = useRef(new Animated.Value(1)).current;
   const bg    = useRef(new Animated.Value(0)).current;
   const [imgError, setImgError] = useState(false);
@@ -32,7 +33,7 @@ export const MenuItemCard: React.FC<Props> = ({
 
   const handleImageError = () => {
     if (retryCount < 2) {
-      setTimeout(() => setRetryCount(c => c + 1), 1500 * (retryCount + 1));
+      setTimeout(() => setRetryCount(n => n + 1), 1500 * (retryCount + 1));
     } else {
       setImgError(true);
     }
@@ -55,14 +56,14 @@ export const MenuItemCard: React.FC<Props> = ({
 
   const bgColor = bg.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.surface, colors.accentLight],
+    outputRange: [c.surface, c.accentLight],
   });
 
   const formatPrice = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
   const remoteUrl = item.imageUrl;
 
   return (
-    <Animated.View style={[styles.cardWrap, { transform: [{ scale }] }]}>
+    <Animated.View style={[styles.cardWrap, { shadowColor: c.primary, transform: [{ scale }] }]}>
       <Animated.View style={[styles.card, { backgroundColor: bgColor }]}>
         <Pressable
           onPress={() => onPress(item)}
@@ -70,7 +71,6 @@ export const MenuItemCard: React.FC<Props> = ({
           onPressOut={handlePressOut}
           style={styles.inner}
         >
-          {/* Thumbnail */}
           {remoteUrl && !imgError ? (
             <Image
               key={retryCount}
@@ -90,11 +90,10 @@ export const MenuItemCard: React.FC<Props> = ({
             </LinearGradient>
           )}
 
-          {/* Text */}
           <View style={styles.mid}>
-            <Text style={styles.name} numberOfLines={2}>{item.name[lang]}</Text>
+            <Text style={[styles.name, { color: c.primary }]} numberOfLines={2}>{item.name[lang]}</Text>
             {item.description && (
-              <Text style={styles.desc} numberOfLines={2}>
+              <Text style={[styles.desc, { color: c.tertiary }]} numberOfLines={2}>
                 {item.description[lang]}
               </Text>
             )}
@@ -117,10 +116,9 @@ export const MenuItemCard: React.FC<Props> = ({
             </View>
           </View>
 
-          {/* Price + chevron */}
           <View style={styles.rightCol}>
-            <Text style={styles.price}>{formatPrice(item.price)}</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.border} />
+            <Text style={[styles.price, { color: c.accent }]}>{formatPrice(item.price)}</Text>
+            <Ionicons name="chevron-forward" size={14} color={c.border} />
           </View>
         </Pressable>
       </Animated.View>
@@ -133,14 +131,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginBottom: 10,
     borderRadius: 18,
-    shadowColor: colors.primary,
     shadowOpacity: 0.07,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
     elevation: 2,
   },
   card: {
-    backgroundColor: colors.surface,
     borderRadius: 18,
     overflow: 'hidden',
   },
@@ -168,14 +164,12 @@ const styles = StyleSheet.create({
   mid: { flex: 1 },
   name: {
     ...typography.callout,
-    color: colors.primary,
     fontWeight: '600',
     marginBottom: 3,
     lineHeight: 20,
   },
   desc: {
     ...typography.caption1,
-    color: colors.tertiary,
     lineHeight: 17,
     marginBottom: 5,
   },
@@ -186,7 +180,6 @@ const styles = StyleSheet.create({
   },
   price: {
     ...typography.subheadline,
-    color: colors.accent,
     fontWeight: '700',
   },
   tags: {

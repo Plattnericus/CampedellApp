@@ -6,7 +6,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../i18n';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { FadeInView } from '../components/FadeInView';
 import { MenuItemCard } from '../components/MenuItemCard';
@@ -30,6 +30,7 @@ type MenuFilter = 'vegan' | 'vegetarian' | 'no-gluten' | 'no-dairy' | 'no-nuts';
 
 export const MenuScreen: React.FC = () => {
   const { t, lang } = useLanguage();
+  const c = useColors();
   const { foodSections, loading, refreshData } = useAppContent();
 
   const screenOpacity = useRef(new Animated.Value(0)).current;
@@ -59,14 +60,10 @@ export const MenuScreen: React.FC = () => {
   const pillScrollRef = useRef<ScrollView>(null);
   const pillOffsets = useRef<Record<string, { x: number; width: number }>>({});
 
-  // Auto-scroll pill bar so the active category is always visible
   useEffect(() => {
     const pill = pillOffsets.current[activeCategory];
     if (pill && pillScrollRef.current) {
-      pillScrollRef.current.scrollTo({
-        x: Math.max(0, pill.x - 16),
-        animated: true,
-      });
+      pillScrollRef.current.scrollTo({ x: Math.max(0, pill.x - 16), animated: true });
     }
   }, [activeCategory]);
 
@@ -83,42 +80,26 @@ export const MenuScreen: React.FC = () => {
     {
       title: lang === 'de' ? 'Ernährung' : lang === 'it' ? 'Alimentazione' : 'Diet',
       options: [
-        {
-          key: 'vegan',
-          label: 'Vegan',
-          icon: 'leaf',
-          iconColor: '#15803d',
-        },
+        { key: 'vegan', label: 'Vegan', icon: 'leaf', iconColor: '#15803d' },
         {
           key: 'vegetarian',
           label: lang === 'de' ? 'Vegetarisch' : lang === 'it' ? 'Vegetariano' : 'Vegetarian',
-          icon: 'leaf-outline',
-          iconColor: '#15803d',
+          icon: 'leaf-outline', iconColor: '#15803d',
         },
       ],
     },
     {
       title: lang === 'de' ? 'Ohne Allergene' : lang === 'it' ? 'Senza allergeni' : 'Allergen-free',
       options: [
-        {
-          key: 'no-gluten',
-          label: lang === 'de' ? 'Glutenfrei' : lang === 'it' ? 'Senza glutine' : 'Gluten-free',
-        },
-        {
-          key: 'no-dairy',
-          label: lang === 'de' ? 'Laktosefrei' : lang === 'it' ? 'Senza lattosio' : 'Lactose-free',
-        },
-        {
-          key: 'no-nuts',
-          label: lang === 'de' ? 'Nussfrei' : lang === 'it' ? 'Senza noci' : 'Nut-free',
-        },
+        { key: 'no-gluten', label: lang === 'de' ? 'Glutenfrei' : lang === 'it' ? 'Senza glutine' : 'Gluten-free' },
+        { key: 'no-dairy', label: lang === 'de' ? 'Laktosefrei' : lang === 'it' ? 'Senza lattosio' : 'Lactose-free' },
+        { key: 'no-nuts', label: lang === 'de' ? 'Nussfrei' : lang === 'it' ? 'Senza noci' : 'Nut-free' },
       ],
     },
   ], [lang]);
 
   const sections: SectionData[] = useMemo(() => {
     let base = allSections;
-
     if (activeFilters.length > 0) {
       base = base.map((s) => ({
         ...s,
@@ -132,7 +113,6 @@ export const MenuScreen: React.FC = () => {
         }),
       })).filter((s) => s.data.length > 0);
     }
-
     if (!query.trim()) return base;
     const q = query.toLowerCase();
     return base
@@ -145,13 +125,11 @@ export const MenuScreen: React.FC = () => {
         ),
       }))
       .filter((s) => s.data.length > 0);
-  }, [query, lang, activeFilters]);
+  }, [query, lang, activeFilters, allSections]);
 
   const toggleFilter = (key: string) => {
     setActiveFilters((prev) =>
-      prev.includes(key as MenuFilter)
-        ? prev.filter((f) => f !== key)
-        : [...prev, key as MenuFilter],
+      prev.includes(key as MenuFilter) ? prev.filter((f) => f !== key) : [...prev, key as MenuFilter],
     );
     setFilterKey((k) => k + 1);
   };
@@ -164,35 +142,30 @@ export const MenuScreen: React.FC = () => {
   const scrollToSection = (idx: number) => {
     setActiveCategory(allSections[idx].id);
     try {
-      listRef.current?.scrollToLocation({
-        sectionIndex: idx, itemIndex: 0, animated: true, viewOffset: 0,
-      });
+      listRef.current?.scrollToLocation({ sectionIndex: idx, itemIndex: 0, animated: true, viewOffset: 0 });
     } catch {}
   };
 
   const filterLabel = lang === 'de' ? 'Filter' : lang === 'it' ? 'Filtri' : 'Filter';
   const resetLabel  = lang === 'de' ? 'Filter zurücksetzen' : lang === 'it' ? 'Reimposta filtri' : 'Reset filters';
 
-  // We no longer block the whole screen with a "Loading..." text if we have cache,
-  // we just show the refreshing spinner on the list itself.
   if (loading && foodSections.length === 0) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: colors.tertiary }}>Loading...</Text>
+      <View style={[styles.container, { backgroundColor: c.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: c.tertiary }}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <Animated.View style={[styles.container, { opacity: screenOpacity }]}>
-      {/* Search bar + filter button */}
+    <Animated.View style={[styles.container, { backgroundColor: c.background, opacity: screenOpacity }]}>
       <View style={styles.searchRow}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={16} color={colors.tertiary} style={styles.searchIcon} />
+        <View style={[styles.searchBar, { backgroundColor: c.cream, borderColor: c.border }]}>
+          <Ionicons name="search" size={16} color={c.tertiary} style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: c.primary }]}
             placeholder={lang === 'de' ? 'Suchen…' : lang === 'it' ? 'Cerca…' : 'Search…'}
-            placeholderTextColor={colors.tertiary}
+            placeholderTextColor={c.tertiary}
             value={query}
             onChangeText={setQuery}
             returnKeyType="search"
@@ -200,31 +173,34 @@ export const MenuScreen: React.FC = () => {
           />
           {query.length > 0 && (
             <Pressable onPress={() => setQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={16} color={colors.tertiary} />
+              <Ionicons name="close-circle" size={16} color={c.tertiary} />
             </Pressable>
           )}
         </View>
 
         <Pressable
-          style={[styles.filterBtn, activeFilters.length > 0 && styles.filterBtnActive]}
+          style={[
+            styles.filterBtn,
+            { backgroundColor: c.cream, borderColor: c.border },
+            activeFilters.length > 0 && { backgroundColor: c.accent, borderColor: c.accent },
+          ]}
           onPress={() => setFilterVisible(true)}
         >
           <Ionicons
             name={activeFilters.length > 0 ? 'funnel' : 'funnel-outline'}
             size={18}
-            color={activeFilters.length > 0 ? colors.white : colors.secondary}
+            color={activeFilters.length > 0 ? c.white : c.secondary}
           />
           {activeFilters.length > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{activeFilters.length}</Text>
+            <View style={[styles.badge, { backgroundColor: c.accentMid, borderColor: c.surface }]}>
+              <Text style={[styles.badgeText, { color: c.white }]}>{activeFilters.length}</Text>
             </View>
           )}
         </Pressable>
       </View>
 
-      {/* Category pills — hidden while searching */}
       {!query.trim() && (
-        <View style={styles.pillBar}>
+        <View style={[styles.pillBar, { borderBottomColor: c.borderLight }]}>
           <ScrollView
             ref={pillScrollRef}
             horizontal
@@ -237,7 +213,11 @@ export const MenuScreen: React.FC = () => {
               return (
                 <Pressable
                   key={s.id}
-                  style={[styles.pill, active && styles.pillActive]}
+                  style={[
+                    styles.pill,
+                    { backgroundColor: c.cream, borderColor: c.border },
+                    active && { backgroundColor: c.accent, borderColor: c.accent },
+                  ]}
                   onPress={() => scrollToSection(idx)}
                   onLayout={(e) => {
                     pillOffsets.current[s.id] = {
@@ -246,12 +226,8 @@ export const MenuScreen: React.FC = () => {
                     };
                   }}
                 >
-                  <Ionicons
-                    name={s.icon as any}
-                    size={13}
-                    color={active ? colors.white : colors.secondary}
-                  />
-                  <Text style={[styles.pillText, active && styles.pillTextActive]}>
+                  <Ionicons name={s.icon as any} size={13} color={active ? c.white : c.secondary} />
+                  <Text style={[styles.pillText, { color: c.secondary }, active && { color: c.white, fontWeight: '600' }]}>
                     {t.categories[s.categoryKey]}
                   </Text>
                 </Pressable>
@@ -288,18 +264,22 @@ export const MenuScreen: React.FC = () => {
           if (top?.section) setActiveCategory((top.section as any).id);
         }}
         viewabilityConfig={{ itemVisiblePercentThreshold: 20 }}
-        contentContainerStyle={[styles.listContent, sections.length === 0 && { flex: 1, backgroundColor: colors.background }]}
+        contentContainerStyle={[
+          styles.listContent,
+          { backgroundColor: c.background },
+          sections.length === 0 && { flex: 1 },
+        ]}
         style={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
-            <Ionicons name="search-outline" size={40} color={colors.border} />
-            <Text style={styles.emptyText}>
+            <Ionicons name="search-outline" size={40} color={c.border} />
+            <Text style={[styles.emptyText, { color: c.tertiary }]}>
               {lang === 'de' ? 'Keine Ergebnisse' : lang === 'it' ? 'Nessun risultato' : 'No results'}
             </Text>
           </View>
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={c.accent} />
         }
       />
 
@@ -324,7 +304,7 @@ export const MenuScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -337,10 +317,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cream,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 9,
     gap: 8,
@@ -349,7 +327,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...typography.callout,
-    color: colors.primary,
     padding: 0,
     margin: 0,
   },
@@ -357,15 +334,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: colors.cream,
     borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  filterBtnActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
   },
   badge: {
     position: 'absolute',
@@ -374,23 +345,19 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.accentMid,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
     borderWidth: 1.5,
-    borderColor: colors.surface,
   },
   badgeText: {
     fontSize: 9,
     fontWeight: '700',
-    color: colors.white,
     lineHeight: 12,
   },
   pillBar: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
   },
   pillContent: { paddingHorizontal: 14, gap: 7 },
   pill: {
@@ -400,25 +367,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: colors.cream,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pillActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
   },
   pillText: {
     ...typography.caption1,
-    color: colors.secondary,
     fontWeight: '500',
   },
-  pillTextActive: {
-    color: colors.white,
-    fontWeight: '600',
-  },
   list: { flex: 1 },
-  listContent: { backgroundColor: colors.background, paddingTop: 8, paddingBottom: 100 },
+  listContent: { paddingTop: 8, paddingBottom: 100 },
   emptyWrap: {
     alignItems: 'center',
     paddingTop: 60,
@@ -426,6 +382,5 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     ...typography.callout,
-    color: colors.tertiary,
   },
 });

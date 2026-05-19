@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { Wine, WineCategory, WINE_CATEGORY_META } from '../data/wines';
 import { useLanguage } from '../i18n';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 
 const SH = Dimensions.get('window').height;
@@ -38,6 +38,7 @@ interface Props {
 
 export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onClose }) => {
   const { lang } = useLanguage();
+  const c = useColors();
 
   const translateY = useRef(new Animated.Value(SH)).current;
   const bgOpacity  = useRef(new Animated.Value(0)).current;
@@ -45,65 +46,43 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
   const isDragging = useRef(false);
   const lastDragY  = useRef(0);
 
-  // ── Open animation ────────────────────────────────────────────────────────
   useEffect(() => {
     if (visible) {
       translateY.setValue(SH);
       bgOpacity.setValue(0);
       Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: 0, friction: 9, tension: 65, useNativeDriver: true,
-        }),
-        Animated.timing(bgOpacity, {
-          toValue: 1, duration: 280, useNativeDriver: true,
-        }),
+        Animated.spring(translateY, { toValue: 0, friction: 9, tension: 65, useNativeDriver: true }),
+        Animated.timing(bgOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
       ]).start();
     }
   }, [visible]);
 
-  // ── Dismiss ───────────────────────────────────────────────────────────────
   const dismiss = () => {
     Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: SH, duration: 300, useNativeDriver: true,
-      }),
-      Animated.timing(bgOpacity, {
-        toValue: 0, duration: 240, useNativeDriver: true,
-      }),
+      Animated.timing(translateY, { toValue: SH, duration: 300, useNativeDriver: true }),
+      Animated.timing(bgOpacity, { toValue: 0, duration: 240, useNativeDriver: true }),
     ]).start(onClose);
   };
 
-  // ── Snap back open ────────────────────────────────────────────────────────
   const snapBack = () => {
     Animated.parallel([
-      Animated.spring(translateY, {
-        toValue: 0, friction: 10, tension: 120, useNativeDriver: true,
-      }),
-      Animated.timing(bgOpacity, {
-        toValue: 1, duration: 200, useNativeDriver: true,
-      }),
+      Animated.spring(translateY, { toValue: 0, friction: 10, tension: 120, useNativeDriver: true }),
+      Animated.timing(bgOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
     ]).start();
   };
 
-  // ── Gestures ──────────────────────────────────────────────────────────────
   const nativeGesture = Gesture.Native();
-
   const panGesture = Gesture.Pan()
     .runOnJS(true)
     .simultaneousWithExternalGesture(nativeGesture)
-    .onStart(() => {
-      isDragging.current = false;
-      lastDragY.current = 0;
-    })
+    .onStart(() => { isDragging.current = false; lastDragY.current = 0; })
     .onUpdate((e) => {
       if (!isDragging.current) {
         if (e.translationY > 0 && scrollY.current <= 1) {
           isDragging.current = true;
           translateY.stopAnimation();
           bgOpacity.stopAnimation();
-        } else {
-          return;
-        }
+        } else return;
       }
       const dy = Math.max(0, e.translationY * 0.92);
       lastDragY.current = dy;
@@ -112,16 +91,12 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
     })
     .onEnd((e) => {
       if (isDragging.current) {
-        if (lastDragY.current > CLOSE_THRESHOLD || e.velocityY > CLOSE_VELOCITY) {
-          dismiss();
-        } else {
-          snapBack();
-        }
+        if (lastDragY.current > CLOSE_THRESHOLD || e.velocityY > CLOSE_VELOCITY) dismiss();
+        else snapBack();
       }
       isDragging.current = false;
     });
 
-  // ── Guard ─────────────────────────────────────────────────────────────────
   if (!wine) return null;
 
   const fmt       = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
@@ -132,30 +107,28 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={dismiss}>
       <View style={styles.overlay}>
-
-        {/* Backdrop */}
-        <Animated.View style={[styles.backdrop, { opacity: bgOpacity }]}>
+        <Animated.View style={[styles.backdrop, { opacity: bgOpacity, backgroundColor: c.overlay }]}>
           <Pressable style={StyleSheet.absoluteFillObject} onPress={dismiss} />
         </Animated.View>
 
-        {/* Sheet */}
         <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
-
-            {/* Drag handle pill */}
+          <Animated.View
+            style={[
+              styles.sheet,
+              { backgroundColor: c.surface, shadowColor: c.primary, transform: [{ translateY }] },
+            ]}
+          >
             <View style={styles.handleArea}>
-              <View style={styles.handle} />
+              <View style={[styles.handle, { backgroundColor: c.border }]} />
             </View>
 
-            {/* Header */}
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle} numberOfLines={2}>{wine.name}</Text>
-              <Pressable style={styles.closeBtn} onPress={dismiss}>
-                <Ionicons name="close" size={18} color={colors.secondary} />
+              <Text style={[styles.sheetTitle, { color: c.primary }]} numberOfLines={2}>{wine.name}</Text>
+              <Pressable style={[styles.closeBtn, { backgroundColor: c.cream }]} onPress={dismiss}>
+                <Ionicons name="close" size={18} color={c.secondary} />
               </Pressable>
             </View>
 
-            {/* Hero */}
             {remoteUrl ? (
               <Image source={{ uri: remoteUrl }} style={styles.heroImage} resizeMode="cover" />
             ) : (
@@ -169,7 +142,6 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
               </LinearGradient>
             )}
 
-            {/* Scrollable content */}
             <GestureDetector gesture={nativeGesture}>
               <GHScrollView
                 style={styles.scroll}
@@ -179,14 +151,14 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
                 scrollEventThrottle={16}
                 onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
               >
-                {/* Winery + region */}
-                <Text style={styles.winery}>{wine.winery}</Text>
-                <Text style={styles.region}>{wine.region}{wine.doc ? ` · ${wine.doc}` : ''}</Text>
+                <Text style={[styles.winery, { color: c.primary }]}>{wine.winery}</Text>
+                <Text style={[styles.region, { color: c.tertiary }]}>
+                  {wine.region}{wine.doc ? ` · ${wine.doc}` : ''}
+                </Text>
 
-                {/* Dryness + organic badges */}
                 <View style={styles.badgeRow}>
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
+                  <View style={[styles.badge, { backgroundColor: c.cream }]}>
+                    <Text style={[styles.badgeText, { color: c.secondary }]}>
                       {DRYNESS_LABEL[lang]?.[wine.dryness] ?? wine.dryness}
                     </Text>
                   </View>
@@ -197,73 +169,69 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
                     </View>
                   )}
                   {wine.isLocal && (
-                    <View style={[styles.badge, styles.localBadge]}>
-                      <Ionicons name="location" size={11} color={colors.accentDark} />
-                      <Text style={[styles.badgeText, { color: colors.accentDark }]}>Lokal</Text>
+                    <View style={[styles.badge, { backgroundColor: c.accentLight }]}>
+                      <Ionicons name="location" size={11} color={c.accentDark} />
+                      <Text style={[styles.badgeText, { color: c.accentDark }]}>Lokal</Text>
                     </View>
                   )}
                 </View>
 
-                {/* Grape varieties */}
                 {wine.grapes && wine.grapes.length > 0 && (
                   <View style={styles.grapeRow}>
                     {wine.grapes.map((g) => (
-                      <View key={g} style={styles.grapeChip}>
-                        <Text style={styles.grapeText}>{GRAPE_FULL[g] ?? g}</Text>
+                      <View key={g} style={[styles.grapeChip, { backgroundColor: c.accentLight }]}>
+                        <Text style={[styles.grapeText, { color: c.accentDark }]}>{GRAPE_FULL[g] ?? g}</Text>
                       </View>
                     ))}
                   </View>
                 )}
 
-                {/* Description */}
-                {desc ? <Text style={styles.desc}>{desc}</Text> : null}
+                {desc ? <Text style={[styles.desc, { color: c.secondary }]}>{desc}</Text> : null}
 
-                {/* Prices */}
-                <View style={styles.priceSection}>
-                  <Text style={styles.priceSectionTitle}>Preise</Text>
+                <View style={[styles.priceSection, { backgroundColor: c.cream }]}>
+                  <Text style={[styles.priceSectionTitle, { color: c.secondary }]}>Preise</Text>
                   {wine.prices.bottle && (
                     <View style={styles.priceRow}>
-                      <Text style={styles.priceLabel}>Flasche</Text>
-                      <Text style={styles.priceValue}>{fmt(wine.prices.bottle)}</Text>
+                      <Text style={[styles.priceLabel, { color: c.secondary }]}>Flasche</Text>
+                      <Text style={[styles.priceValue, { color: c.accent }]}>{fmt(wine.prices.bottle)}</Text>
                     </View>
                   )}
                   {wine.prices.glass && (
                     <View style={styles.priceRow}>
-                      <Text style={styles.priceLabel}>Glas (0,2 l)</Text>
-                      <Text style={styles.priceValue}>{fmt(wine.prices.glass)}</Text>
+                      <Text style={[styles.priceLabel, { color: c.secondary }]}>Glas (0,2 l)</Text>
+                      <Text style={[styles.priceValue, { color: c.accent }]}>{fmt(wine.prices.glass)}</Text>
                     </View>
                   )}
                   {wine.prices.quarterLiter && (
                     <View style={styles.priceRow}>
-                      <Text style={styles.priceLabel}>¼ Liter</Text>
-                      <Text style={styles.priceValue}>{fmt(wine.prices.quarterLiter)}</Text>
+                      <Text style={[styles.priceLabel, { color: c.secondary }]}>¼ Liter</Text>
+                      <Text style={[styles.priceValue, { color: c.accent }]}>{fmt(wine.prices.quarterLiter)}</Text>
                     </View>
                   )}
                   {wine.prices.halfLiter && (
                     <View style={styles.priceRow}>
-                      <Text style={styles.priceLabel}>½ Liter</Text>
-                      <Text style={styles.priceValue}>{fmt(wine.prices.halfLiter)}</Text>
+                      <Text style={[styles.priceLabel, { color: c.secondary }]}>½ Liter</Text>
+                      <Text style={[styles.priceValue, { color: c.accent }]}>{fmt(wine.prices.halfLiter)}</Text>
                     </View>
                   )}
                   {wine.prices.liter && (
                     <View style={styles.priceRow}>
-                      <Text style={styles.priceLabel}>1 Liter</Text>
-                      <Text style={styles.priceValue}>{fmt(wine.prices.liter)}</Text>
+                      <Text style={[styles.priceLabel, { color: c.secondary }]}>1 Liter</Text>
+                      <Text style={[styles.priceValue, { color: c.accent }]}>{fmt(wine.prices.liter)}</Text>
                     </View>
                   )}
                 </View>
 
-                {/* Awards */}
                 {wine.awards && wine.awards.length > 0 && (
-                  <View style={styles.awardsSection}>
+                  <View style={[styles.awardsSection, { backgroundColor: c.accentLight }]}>
                     <View style={styles.awardHeader}>
-                      <Ionicons name="ribbon" size={14} color={colors.accent} />
-                      <Text style={styles.awardTitle}>Auszeichnungen</Text>
+                      <Ionicons name="ribbon" size={14} color={c.accent} />
+                      <Text style={[styles.awardTitle, { color: c.accentDark }]}>Auszeichnungen</Text>
                     </View>
                     {wine.awards.map((a, i) => (
                       <View key={i} style={styles.awardRow}>
-                        <View style={styles.dot} />
-                        <Text style={styles.awardText}>{a}</Text>
+                        <View style={[styles.dot, { backgroundColor: c.accent }]} />
+                        <Text style={[styles.awardText, { color: c.secondary }]}>{a}</Text>
                       </View>
                     ))}
                   </View>
@@ -272,7 +240,6 @@ export const WineDetailScreen: React.FC<Props> = ({ wine, category, visible, onC
                 <View style={{ height: 48 }} />
               </GHScrollView>
             </GestureDetector>
-
           </Animated.View>
         </GestureDetector>
       </View>
@@ -284,13 +251,10 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay,
   },
   sheet: {
-    backgroundColor: colors.surface,
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
     maxHeight: SH * 0.92,
-    shadowColor: colors.primary,
     shadowOpacity: 0.18,
     shadowOffset: { width: 0, height: -6 },
     shadowRadius: 24,
@@ -298,7 +262,6 @@ const styles = StyleSheet.create({
   handleArea: { paddingVertical: 10, alignItems: 'center' },
   handle: {
     width: 38, height: 4,
-    backgroundColor: colors.border,
     borderRadius: 2,
   },
   sheetHeader: {
@@ -307,12 +270,10 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     ...typography.title3,
-    color: colors.primary,
     flex: 1, paddingRight: 12,
   },
   closeBtn: {
     width: 34, height: 34, borderRadius: 17,
-    backgroundColor: colors.cream,
     alignItems: 'center', justifyContent: 'center',
   },
   heroImage: { width: '100%', height: HERO_H },
@@ -324,13 +285,11 @@ const styles = StyleSheet.create({
   scrollContent: { paddingTop: 18 },
   winery: {
     ...typography.title3,
-    color: colors.primary,
     fontWeight: '700',
     marginBottom: 4,
   },
   region: {
     ...typography.footnote,
-    color: colors.tertiary,
     letterSpacing: 0.4,
     marginBottom: 14,
   },
@@ -340,15 +299,12 @@ const styles = StyleSheet.create({
   },
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.cream,
     borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 5,
   },
   organicBadge: { backgroundColor: '#dcfce7' },
-  localBadge: { backgroundColor: colors.accentLight },
   badgeText: {
     ...typography.caption1,
-    color: colors.secondary,
     fontWeight: '600',
   },
   grapeRow: {
@@ -356,30 +312,25 @@ const styles = StyleSheet.create({
     gap: 6, marginBottom: 16,
   },
   grapeChip: {
-    backgroundColor: colors.accentLight,
     borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 5,
   },
   grapeText: {
     ...typography.caption1,
-    color: colors.accentDark,
     fontWeight: '600',
   },
   desc: {
     ...typography.body,
-    color: colors.secondary,
     lineHeight: 26,
     marginBottom: 22,
   },
   priceSection: {
-    backgroundColor: colors.cream,
     borderRadius: 16,
     padding: 16, gap: 10,
     marginBottom: 18,
   },
   priceSectionTitle: {
     ...typography.subheadline,
-    color: colors.secondary,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -390,10 +341,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  priceLabel: { ...typography.callout, color: colors.secondary },
-  priceValue: { ...typography.callout, color: colors.accent, fontWeight: '700' },
+  priceLabel: { ...typography.callout },
+  priceValue: { ...typography.callout, fontWeight: '700' },
   awardsSection: {
-    backgroundColor: colors.accentLight,
     borderRadius: 16, padding: 16, gap: 8,
   },
   awardHeader: {
@@ -402,12 +352,11 @@ const styles = StyleSheet.create({
   },
   awardTitle: {
     ...typography.subheadline,
-    color: colors.accentDark,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   awardRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.accent },
-  awardText: { ...typography.callout, color: colors.secondary, flex: 1 },
+  dot: { width: 5, height: 5, borderRadius: 2.5 },
+  awardText: { ...typography.callout, flex: 1 },
 });

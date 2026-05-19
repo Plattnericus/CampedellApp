@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLanguage } from '../i18n';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { FadeInView } from '../components/FadeInView';
 import { useAppContent } from '../data/DataContext';
@@ -57,7 +57,6 @@ const HERO_IMAGES = [
 const SLIDE_INTERVAL = 6500;
 const FADE_DURATION  = 1300;
 
-// ─── Crossfade hero slideshow ────────────────────────────────────────────────
 interface HeroSlideshowProps { children: React.ReactNode }
 
 const HeroSlideshow: React.FC<HeroSlideshowProps> = ({ children }) => {
@@ -65,7 +64,6 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({ children }) => {
     HERO_IMAGES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))
   ).current;
   const scales = useRef(HERO_IMAGES.map(() => new Animated.Value(1))).current;
-  // Animated dot widths and opacities — no state change = no flicker
   const dotWidths    = useRef(HERO_IMAGES.map((_, i) => new Animated.Value(i === 0 ? 18 : 6))).current;
   const dotOpacities = useRef(HERO_IMAGES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0.35))).current;
   const currentIdxRef = useRef(0);
@@ -91,20 +89,15 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({ children }) => {
 
   useEffect(() => {
     startKenBurns(0);
-
     const id = setInterval(() => {
       const from = currentIdxRef.current;
       const to   = (from + 1) % HERO_IMAGES.length;
-
       startKenBurns(to);
       animateDots(from, to);
-
       Animated.parallel([
         Animated.timing(opacities[from], { toValue: 0, duration: FADE_DURATION, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         Animated.timing(opacities[to],   { toValue: 1, duration: FADE_DURATION, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ]).start(() => {
-        currentIdxRef.current = to;
-      });
+      ]).start(() => { currentIdxRef.current = to; });
     }, SLIDE_INTERVAL);
     return () => clearInterval(id);
   }, []);
@@ -169,6 +162,7 @@ const heroStyles = StyleSheet.create({
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { lang } = useLanguage();
+  const c = useColors();
   const { foodSections, drinkSections, wineSections, loading, refreshData } = useAppContent();
   const w = WELCOME[lang] ?? WELCOME.de;
   const labels = SECTION_LABELS[lang] ?? SECTION_LABELS.de;
@@ -197,8 +191,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const menuCards = [
     {
       icon: 'restaurant' as const,
-      iconBg: colors.accentLight,
-      iconColor: colors.accent,
+      iconBg: c.accentLight,
+      iconColor: c.accent,
       title: lang === 'de' ? 'Speisekarte' : lang === 'it' ? 'Menu' : 'Food Menu',
       sub: lang === 'de'
         ? `${foodGangs} Gänge · ${totalDishes} Gerichte`
@@ -209,8 +203,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     },
     {
       icon: 'cafe' as const,
-      iconBg: colors.accentLight,
-      iconColor: colors.accent,
+      iconBg: c.accentLight,
+      iconColor: c.accent,
       title: lang === 'de' ? 'Getränke' : lang === 'it' ? 'Bevande' : 'Drinks',
       sub: lang === 'de'
         ? `${drinkCats} Kategorien · ${totalDrinks} Getränke`
@@ -221,8 +215,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     },
     {
       icon: 'wine' as const,
-      iconBg: colors.accentLight,
-      iconColor: colors.accent,
+      iconBg: c.accentLight,
+      iconColor: c.accent,
       title: lang === 'de' ? 'Weinkarte' : lang === 'it' ? 'Carta dei Vini' : 'Wine List',
       sub: lang === 'de'
         ? `Südtiroler Auslese · ${totalWines} Weine`
@@ -235,68 +229,69 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <Animated.View style={{ flex: 1, opacity: screenOpacity }}>
-    <ScrollView
-      ref={scrollRef}
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />
-      }
-    >
-      {/* Hero slideshow */}
-      <FadeInView duration={500}>
-        <View style={styles.heroWrap}>
-          <HeroSlideshow>
-            <Text style={styles.heroTitle}>{w.title}</Text>
-            <Text style={styles.heroSub}>{w.sub}</Text>
-            <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>{w.tag}</Text>
-            </View>
-          </HeroSlideshow>
+      <ScrollView
+        ref={scrollRef}
+        style={[styles.container, { backgroundColor: c.background }]}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={c.accent} />
+        }
+      >
+        <FadeInView duration={500}>
+          <View style={[styles.heroWrap, { shadowColor: c.primary }]}>
+            <HeroSlideshow>
+              <Text style={styles.heroTitle}>{w.title}</Text>
+              <Text style={styles.heroSub}>{w.sub}</Text>
+              <View style={styles.heroBadge}>
+                <Text style={styles.heroBadgeText}>{w.tag}</Text>
+              </View>
+            </HeroSlideshow>
+          </View>
+        </FadeInView>
+
+        <FadeInView delay={120} duration={400}>
+          <Text style={[styles.sectionTitle, { color: c.primary }]}>{labels.cards}</Text>
+        </FadeInView>
+
+        <View style={styles.cardList}>
+          {menuCards.map((card, i) => (
+            <FadeInView key={card.tab} delay={160 + i * 70} duration={380}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.menuCard,
+                  { backgroundColor: c.surface, shadowColor: c.primary },
+                  pressed && styles.menuCardPressed,
+                ]}
+                onPress={() => navigation.navigate(card.tab)}
+              >
+                <View style={[styles.menuIconWrap, { backgroundColor: card.iconBg }]}>
+                  <Ionicons name={card.icon} size={26} color={card.iconColor} />
+                </View>
+                <View style={styles.menuCardMid}>
+                  <Text style={[styles.menuCardTitle, { color: c.primary }]}>{card.title}</Text>
+                  <Text style={[styles.menuCardSub, { color: c.tertiary }]}>{card.sub}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={c.border} />
+              </Pressable>
+            </FadeInView>
+          ))}
         </View>
-      </FadeInView>
 
-      {/* Unsere Karten */}
-      <FadeInView delay={120} duration={400}>
-        <Text style={styles.sectionTitle}>{labels.cards}</Text>
-      </FadeInView>
+        <View style={{ flex: 1, minHeight: 40 }} />
 
-      <View style={styles.cardList}>
-        {menuCards.map((card, i) => (
-          <FadeInView key={card.tab} delay={160 + i * 70} duration={380}>
-            <Pressable
-              style={({ pressed }) => [styles.menuCard, pressed && styles.menuCardPressed]}
-              onPress={() => navigation.navigate(card.tab)}
-            >
-              <View style={[styles.menuIconWrap, { backgroundColor: card.iconBg }]}>
-                <Ionicons name={card.icon} size={26} color={card.iconColor} />
-              </View>
-              <View style={styles.menuCardMid}>
-                <Text style={styles.menuCardTitle}>{card.title}</Text>
-                <Text style={styles.menuCardSub}>{card.sub}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.border} />
-            </Pressable>
-          </FadeInView>
-        ))}
-      </View>
+        <FadeInView delay={400} duration={400}>
+          <Text style={[styles.slogan, { color: c.tertiary }]}>Campedèl · Seiser Alm · Südtirol</Text>
+        </FadeInView>
 
-      <View style={{ flex: 1, minHeight: 40 }} />
-
-      {/* Slogan */}
-      <FadeInView delay={400} duration={400}>
-        <Text style={styles.slogan}>Campedèl · Seiser Alm · Südtirol</Text>
-      </FadeInView>
-
-      <View style={{ height: 110 }} />
-    </ScrollView>
+        <View style={{ height: 110 }} />
+      </ScrollView>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   content: { paddingTop: 16 },
 
   heroWrap: {
@@ -304,7 +299,6 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     borderRadius: 22,
     overflow: 'hidden',
-    shadowColor: colors.primary,
     shadowOpacity: 0.18,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 16,
@@ -341,7 +335,6 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     ...typography.title2,
-    color: colors.primary,
     fontWeight: '800',
     marginHorizontal: 18,
     marginBottom: 14,
@@ -349,14 +342,12 @@ const styles = StyleSheet.create({
 
   cardList: { gap: 10, marginHorizontal: 16, marginBottom: 28 },
   menuCard: {
-    backgroundColor: colors.surface,
     borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    shadowColor: colors.primary,
     shadowOpacity: 0.06,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
@@ -374,19 +365,16 @@ const styles = StyleSheet.create({
   menuCardMid: { flex: 1 },
   menuCardTitle: {
     ...typography.callout,
-    color: colors.primary,
     fontWeight: '700',
     marginBottom: 3,
   },
   menuCardSub: {
     ...typography.caption1,
-    color: colors.tertiary,
     fontWeight: '500',
   },
 
   slogan: {
     ...typography.footnote,
-    color: colors.tertiary,
     textAlign: 'center',
     letterSpacing: 0.6,
     marginHorizontal: 30,

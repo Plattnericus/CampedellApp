@@ -6,7 +6,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../i18n';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { FadeInView } from '../components/FadeInView';
 import { WineCard } from '../components/WineCard';
@@ -27,6 +27,7 @@ type WineSectionData = {
 
 export const WinesScreen: React.FC = () => {
   const { t, lang } = useLanguage();
+  const c = useColors();
   const { wineSections, loading, refreshData } = useAppContent();
 
   const screenOpacity = useRef(new Animated.Value(0)).current;
@@ -58,14 +59,10 @@ export const WinesScreen: React.FC = () => {
   const pillScrollRef = useRef<ScrollView>(null);
   const pillOffsets = useRef<Record<string, { x: number; width: number }>>({});
 
-  // Auto-scroll pill bar to keep active category visible
   useEffect(() => {
     const pill = pillOffsets.current[activeCategory];
     if (pill && pillScrollRef.current) {
-      pillScrollRef.current.scrollTo({
-        x: Math.max(0, pill.x - 16),
-        animated: true,
-      });
+      pillScrollRef.current.scrollTo({ x: Math.max(0, pill.x - 16), animated: true });
     }
   }, [activeCategory]);
 
@@ -78,21 +75,20 @@ export const WinesScreen: React.FC = () => {
           key: 'local',
           label: lang === 'de' ? 'Lokal' : lang === 'it' ? 'Locale' : 'Local',
           icon: 'location',
-          iconColor: colors.accentDark,
+          iconColor: c.accentDark,
         },
       ],
     },
     {
       title: lang === 'de' ? 'Geschmack' : lang === 'it' ? 'Gusto' : 'Taste',
       options: [
-        { key: 'trocken',     label: lang === 'de' ? 'Trocken'     : lang === 'it' ? 'Secco'     : 'Dry'    },
+        { key: 'trocken',     label: lang === 'de' ? 'Trocken'     : lang === 'it' ? 'Secco'     : 'Dry' },
         { key: 'halbtrocken', label: lang === 'de' ? 'Halbtrocken' : lang === 'it' ? 'Semisecco' : 'Off-dry' },
-        { key: 'lieblich',    label: lang === 'de' ? 'Lieblich'    : lang === 'it' ? 'Amabile'   : 'Sweet'   },
+        { key: 'lieblich',    label: lang === 'de' ? 'Lieblich'    : lang === 'it' ? 'Amabile'   : 'Sweet' },
       ],
     },
-  ], [lang]);
+  ], [lang, c.accentDark]);
 
-  // Build SectionList sections from all wine categories
   const sections: WineSectionData[] = useMemo(() => {
     const drynessFilters = activeFilters.filter(
       (f) => f === 'trocken' || f === 'halbtrocken' || f === 'lieblich'
@@ -104,7 +100,6 @@ export const WinesScreen: React.FC = () => {
       const section = wineSections.find((s) => s.category === cat);
       let data: Wine[] = section?.wines ?? [];
 
-      // Apply filters
       if (activeFilters.length > 0) {
         data = data.filter((wine) => {
           if (activeFilters.includes('organic') && !wine.isOrganic) return false;
@@ -114,7 +109,6 @@ export const WinesScreen: React.FC = () => {
         });
       }
 
-      // Apply search
       if (q) {
         data = data.filter(
           (w) =>
@@ -131,9 +125,7 @@ export const WinesScreen: React.FC = () => {
 
   const toggleFilter = (key: string) => {
     setActiveFilters((prev) =>
-      prev.includes(key as WineFilter)
-        ? prev.filter((f) => f !== key)
-        : [...prev, key as WineFilter]
+      prev.includes(key as WineFilter) ? prev.filter((f) => f !== key) : [...prev, key as WineFilter]
     );
     setFilterKey((k) => k + 1);
   };
@@ -149,12 +141,7 @@ export const WinesScreen: React.FC = () => {
     const idx = sections.findIndex((s) => s.category === cat);
     if (idx < 0) return;
     try {
-      listRef.current?.scrollToLocation({
-        sectionIndex: idx,
-        itemIndex: 0,
-        animated: true,
-        viewOffset: 0,
-      });
+      listRef.current?.scrollToLocation({ sectionIndex: idx, itemIndex: 0, animated: true, viewOffset: 0 });
     } catch {}
   };
 
@@ -167,22 +154,21 @@ export const WinesScreen: React.FC = () => {
 
   if (loading && wineSections.length === 0) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: colors.tertiary }}>Loading…</Text>
+      <View style={[styles.container, { backgroundColor: c.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: c.tertiary }}>Loading…</Text>
       </View>
     );
   }
 
   return (
-    <Animated.View style={[styles.container, { opacity: screenOpacity }]}>
-      {/* Search bar + filter */}
+    <Animated.View style={[styles.container, { backgroundColor: c.background, opacity: screenOpacity }]}>
       <View style={styles.searchRow}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={16} color={colors.tertiary} />
+        <View style={[styles.searchBar, { backgroundColor: c.cream, borderColor: c.border }]}>
+          <Ionicons name="search" size={16} color={c.tertiary} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: c.primary }]}
             placeholder={lang === 'de' ? 'Wein suchen…' : lang === 'it' ? 'Cerca vino…' : 'Search wine…'}
-            placeholderTextColor={colors.tertiary}
+            placeholderTextColor={c.tertiary}
             value={query}
             onChangeText={setQuery}
             returnKeyType="search"
@@ -190,31 +176,34 @@ export const WinesScreen: React.FC = () => {
           />
           {query.length > 0 && (
             <Pressable onPress={() => setQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={16} color={colors.tertiary} />
+              <Ionicons name="close-circle" size={16} color={c.tertiary} />
             </Pressable>
           )}
         </View>
 
         <Pressable
-          style={[styles.filterBtn, activeFilters.length > 0 && styles.filterBtnActive]}
+          style={[
+            styles.filterBtn,
+            { backgroundColor: c.cream, borderColor: c.border },
+            activeFilters.length > 0 && { backgroundColor: c.accent, borderColor: c.accent },
+          ]}
           onPress={() => setFilterVisible(true)}
         >
           <Ionicons
             name={activeFilters.length > 0 ? 'funnel' : 'funnel-outline'}
             size={18}
-            color={activeFilters.length > 0 ? colors.white : colors.secondary}
+            color={activeFilters.length > 0 ? c.white : c.secondary}
           />
           {activeFilters.length > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{activeFilters.length}</Text>
+            <View style={[styles.badge, { backgroundColor: c.accentMid, borderColor: c.surface }]}>
+              <Text style={[styles.badgeText, { color: c.white }]}>{activeFilters.length}</Text>
             </View>
           )}
         </Pressable>
       </View>
 
-      {/* Category pills — hidden while searching */}
       {!query.trim() && (
-        <View style={styles.pillBar}>
+        <View style={[styles.pillBar, { borderBottomColor: c.borderLight }]}>
           <ScrollView
             ref={pillScrollRef}
             horizontal
@@ -228,7 +217,11 @@ export const WinesScreen: React.FC = () => {
               return (
                 <Pressable
                   key={cat}
-                  style={[styles.pill, active && styles.pillActive]}
+                  style={[
+                    styles.pill,
+                    { backgroundColor: c.cream, borderColor: c.border },
+                    active && { backgroundColor: c.accent, borderColor: c.accent },
+                  ]}
                   onPress={() => scrollToCategory(cat)}
                   onLayout={(e) => {
                     pillOffsets.current[cat] = {
@@ -237,12 +230,8 @@ export const WinesScreen: React.FC = () => {
                     };
                   }}
                 >
-                  <Ionicons
-                    name={meta.icon as any}
-                    size={13}
-                    color={active ? colors.white : colors.secondary}
-                  />
-                  <Text style={[styles.pillText, active && styles.pillTextActive]}>
+                  <Ionicons name={meta.icon as any} size={13} color={active ? c.white : c.secondary} />
+                  <Text style={[styles.pillText, { color: c.secondary }, active && { color: c.white, fontWeight: '600' }]}>
                     {t.categories[CAT_LABEL[cat]]}
                   </Text>
                 </Pressable>
@@ -252,7 +241,6 @@ export const WinesScreen: React.FC = () => {
         </View>
       )}
 
-      {/* All wines in one SectionList */}
       <SectionList
         key={filterKey}
         ref={listRef}
@@ -272,8 +260,8 @@ export const WinesScreen: React.FC = () => {
           const meta = WINE_CATEGORY_META[cat];
           return (
             <View style={styles.sectionHeader}>
-              <Ionicons name={meta.icon as any} size={20} color={colors.accent} />
-              <Text style={styles.sectionTitle}>{t.categories[CAT_LABEL[cat]]}</Text>
+              <Ionicons name={meta.icon as any} size={20} color={c.accent} />
+              <Text style={[styles.sectionTitle, { color: c.primary }]}>{t.categories[CAT_LABEL[cat]]}</Text>
             </View>
           );
         }}
@@ -290,18 +278,18 @@ export const WinesScreen: React.FC = () => {
         viewabilityConfig={{ itemVisiblePercentThreshold: 20 }}
         contentContainerStyle={[
           styles.list,
-          sections.length === 0 && { flex: 1, backgroundColor: colors.background },
+          sections.length === 0 && { flex: 1, backgroundColor: c.background },
         ]}
         ListEmptyComponent={
           <View style={[styles.emptyWrap, { flex: 1, justifyContent: 'center' }]}>
-            <Ionicons name="wine-outline" size={40} color={colors.border} />
-            <Text style={styles.emptyText}>
+            <Ionicons name="wine-outline" size={40} color={c.border} />
+            <Text style={[styles.emptyText, { color: c.tertiary }]}>
               {lang === 'de' ? 'Keine Ergebnisse' : lang === 'it' ? 'Nessun risultato' : 'No results'}
             </Text>
           </View>
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={c.accent} />
         }
       />
 
@@ -327,7 +315,7 @@ export const WinesScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
 
   searchRow: {
     flexDirection: 'row',
@@ -341,10 +329,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cream,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 9,
     gap: 8,
@@ -352,7 +338,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...typography.callout,
-    color: colors.primary,
     padding: 0,
     margin: 0,
   },
@@ -360,15 +345,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: colors.cream,
     borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  filterBtnActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
   },
   badge: {
     position: 'absolute',
@@ -377,24 +356,20 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.accentMid,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
     borderWidth: 1.5,
-    borderColor: colors.surface,
   },
   badgeText: {
     fontSize: 9,
     fontWeight: '700',
-    color: colors.white,
     lineHeight: 12,
   },
 
   pillBar: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
   },
   pillContent: { paddingHorizontal: 14, gap: 7 },
   pill: {
@@ -404,13 +379,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: colors.cream,
     borderWidth: 1,
-    borderColor: colors.border,
   },
-  pillActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  pillText: { ...typography.caption1, color: colors.secondary, fontWeight: '500' },
-  pillTextActive: { color: colors.white, fontWeight: '600' },
+  pillText: {
+    ...typography.caption1,
+    fontWeight: '500',
+  },
 
   sectionHeader: {
     flexDirection: 'row',
@@ -422,11 +396,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.title2,
-    color: colors.primary,
     fontWeight: '800',
   },
 
   list: { paddingBottom: 100 },
   emptyWrap: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { ...typography.callout, color: colors.tertiary },
+  emptyText: { ...typography.callout },
 });

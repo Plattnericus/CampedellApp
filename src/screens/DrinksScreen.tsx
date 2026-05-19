@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { useLanguage } from '../i18n';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { FadeInView } from '../components/FadeInView';
 import { FilterSheet, FilterGroup } from '../components/FilterSheet';
@@ -48,6 +48,7 @@ interface DetailProps {
 
 const DrinkDetailSheet: React.FC<DetailProps> = ({ item, sectionIcon, visible, onClose }) => {
   const { lang } = useLanguage();
+  const c = useColors();
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const bgOpacity = useRef(new Animated.Value(0)).current;
   const scrollY = useRef(0);
@@ -117,18 +118,25 @@ const DrinkDetailSheet: React.FC<DetailProps> = ({ item, sectionIcon, visible, o
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={dismiss}>
       <View style={detailStyles.overlay}>
-        <Animated.View style={[detailStyles.backdrop, { opacity: bgOpacity }]}>
+        <Animated.View style={[detailStyles.backdrop, { opacity: bgOpacity, backgroundColor: c.overlay }]}>
           <Pressable style={StyleSheet.absoluteFillObject} onPress={dismiss} />
         </Animated.View>
         <GestureDetector gesture={panGesture}>
-          <Animated.View style={[detailStyles.sheet, { transform: [{ translateY }] }]}>
+          <Animated.View
+            style={[
+              detailStyles.sheet,
+              { backgroundColor: c.surface, shadowColor: c.primary, transform: [{ translateY }] },
+            ]}
+          >
             <View style={detailStyles.handleArea}>
-              <View style={detailStyles.handle} />
+              <View style={[detailStyles.handle, { backgroundColor: c.border }]} />
             </View>
             <View style={detailStyles.sheetHeader}>
-              <Text style={detailStyles.sheetTitle} numberOfLines={2}>{item.name[lang]}</Text>
-              <Pressable style={detailStyles.closeBtn} onPress={dismiss}>
-                <Ionicons name="close" size={18} color={colors.secondary} />
+              <Text style={[detailStyles.sheetTitle, { color: c.primary }]} numberOfLines={2}>
+                {item.name[lang]}
+              </Text>
+              <Pressable style={[detailStyles.closeBtn, { backgroundColor: c.cream }]} onPress={dismiss}>
+                <Ionicons name="close" size={18} color={c.secondary} />
               </Pressable>
             </View>
             {item.imageUrl && !imgError ? (
@@ -138,7 +146,7 @@ const DrinkDetailSheet: React.FC<DetailProps> = ({ item, sectionIcon, visible, o
                 style={detailStyles.heroImage}
                 resizeMode="cover"
                 onError={() => {
-                  if (retryCount < 2) setTimeout(() => setRetryCount(c => c + 1), 1500);
+                  if (retryCount < 2) setTimeout(() => setRetryCount(n => n + 1), 1500);
                   else setImgError(true);
                 }}
               />
@@ -157,13 +165,13 @@ const DrinkDetailSheet: React.FC<DetailProps> = ({ item, sectionIcon, visible, o
                 onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
               >
                 {item.prices.length > 0 && (
-                  <View style={detailStyles.priceSection}>
+                  <View style={[detailStyles.priceSection, { backgroundColor: c.cream }]}>
                     {item.prices.map((p, i) => (
                       <View key={i} style={detailStyles.priceRow}>
-                        <Text style={detailStyles.priceLabel}>
+                        <Text style={[detailStyles.priceLabel, { color: c.secondary }]}>
                           {p.amount || (lang === 'de' ? 'Preis' : lang === 'it' ? 'Prezzo' : 'Price')}
                         </Text>
-                        <Text style={detailStyles.priceValue}>{fmt(p.price)}</Text>
+                        <Text style={[detailStyles.priceValue, { color: c.accent }]}>{fmt(p.price)}</Text>
                       </View>
                     ))}
                   </View>
@@ -180,36 +188,35 @@ const DrinkDetailSheet: React.FC<DetailProps> = ({ item, sectionIcon, visible, o
 
 const detailStyles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay },
+  backdrop: { ...StyleSheet.absoluteFillObject },
   sheet: {
-    backgroundColor: colors.surface,
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
     maxHeight: SCREEN_HEIGHT * 0.85,
-    shadowColor: colors.primary, shadowOpacity: 0.18,
+    shadowOpacity: 0.18,
     shadowOffset: { width: 0, height: -6 }, shadowRadius: 24,
   },
   handleArea: { paddingVertical: 10, alignItems: 'center' },
-  handle: { width: 38, height: 4, backgroundColor: colors.border, borderRadius: 2 },
+  handle: { width: 38, height: 4, borderRadius: 2 },
   sheetHeader: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 22, paddingTop: 12, paddingBottom: 14,
   },
-  sheetTitle: { ...typography.title3, color: colors.primary, flex: 1, paddingRight: 12 },
+  sheetTitle: { ...typography.title3, flex: 1, paddingRight: 12 },
   closeBtn: {
     width: 34, height: 34, borderRadius: 17,
-    backgroundColor: colors.cream, alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   heroImage: { width: '100%', height: 200 },
   heroGradient: { width: '100%', height: 200, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: 22 },
   scrollContent: { paddingTop: 18 },
   priceSection: {
-    backgroundColor: colors.cream, borderRadius: 16,
+    borderRadius: 16,
     padding: 16, gap: 12, marginBottom: 18,
   },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  priceLabel: { ...typography.callout, color: colors.secondary },
-  priceValue: { ...typography.callout, color: colors.accent, fontWeight: '700' },
+  priceLabel: { ...typography.callout },
+  priceValue: { ...typography.callout, fontWeight: '700' },
 });
 
 // ─── Horizontal Drink Card ────────────────────────────────────────────────────
@@ -222,11 +229,12 @@ interface DrinkCardProps {
 
 const DrinkCard: React.FC<DrinkCardProps> = ({ item, sectionIcon, onPress }) => {
   const { lang } = useLanguage();
+  const c = useColors();
   const [imgError, setImgError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
   const handleImageError = useCallback(() => {
-    if (retryCount < 2) setTimeout(() => setRetryCount(c => c + 1), 1500 * (retryCount + 1));
+    if (retryCount < 2) setTimeout(() => setRetryCount(n => n + 1), 1500 * (retryCount + 1));
     else setImgError(true);
   }, [retryCount]);
 
@@ -240,7 +248,10 @@ const DrinkCard: React.FC<DrinkCardProps> = ({ item, sectionIcon, onPress }) => 
   const [g1, g2] = getGradient(sectionIcon);
 
   return (
-    <Pressable style={cardStyles.card} onPress={() => onPress(item)}>
+    <Pressable
+      style={[cardStyles.card, { backgroundColor: c.surface, shadowColor: c.primary }]}
+      onPress={() => onPress(item)}
+    >
       {item.imageUrl && !imgError ? (
         <Image
           key={retryCount}
@@ -251,16 +262,12 @@ const DrinkCard: React.FC<DrinkCardProps> = ({ item, sectionIcon, onPress }) => 
         />
       ) : (
         <LinearGradient colors={[g1, g2]} style={cardStyles.imagePlaceholder}>
-          <Ionicons
-            name={(sectionIcon as any) ?? 'cafe-outline'}
-            size={36}
-            color="rgba(126,161,59,0.35)"
-          />
+          <Ionicons name={(sectionIcon as any) ?? 'cafe-outline'} size={36} color="rgba(126,161,59,0.35)" />
         </LinearGradient>
       )}
       <View style={cardStyles.info}>
-        <Text style={cardStyles.name} numberOfLines={2}>{item.name[lang]}</Text>
-        {priceLabel ? <Text style={cardStyles.price}>{priceLabel}</Text> : null}
+        <Text style={[cardStyles.name, { color: c.primary }]} numberOfLines={2}>{item.name[lang]}</Text>
+        {priceLabel ? <Text style={[cardStyles.price, { color: c.accent }]}>{priceLabel}</Text> : null}
       </View>
     </Pressable>
   );
@@ -269,10 +276,8 @@ const DrinkCard: React.FC<DrinkCardProps> = ({ item, sectionIcon, onPress }) => 
 const cardStyles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
-    backgroundColor: colors.surface,
     borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: colors.primary,
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 8,
@@ -284,14 +289,15 @@ const cardStyles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   info: { padding: 10, gap: 3 },
-  name: { ...typography.caption1, color: colors.primary, fontWeight: '600', lineHeight: 17 },
-  price: { ...typography.caption1, color: colors.accent, fontWeight: '700' },
+  name: { ...typography.caption1, fontWeight: '600', lineHeight: 17 },
+  price: { ...typography.caption1, fontWeight: '700' },
 });
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export const DrinksScreen: React.FC = () => {
   const { t, lang } = useLanguage();
+  const c = useColors();
   const { drinkSections, loading, refreshData } = useAppContent();
 
   const [query, setQuery] = useState('');
@@ -307,7 +313,6 @@ export const DrinksScreen: React.FC = () => {
   const mainScrollRef = useRef<ScrollView>(null);
   const pillScrollRef = useRef<ScrollView>(null);
   const pillOffsets = useRef<Record<string, { x: number; width: number }>>({});
-  // y-offset of each section header in the main scroll
   const sectionYOffsets = useRef<Record<string, number>>({});
 
   const resolvedCategory = drinkSections.find(s => s.id === activeCategory)
@@ -320,7 +325,6 @@ export const DrinksScreen: React.FC = () => {
     return () => screenOpacity.setValue(0);
   }, []));
 
-  // Auto-scroll pill bar when active category changes
   useEffect(() => {
     const pill = pillOffsets.current[resolvedCategory];
     if (pill && pillScrollRef.current) {
@@ -331,7 +335,6 @@ export const DrinksScreen: React.FC = () => {
   const getCategoryLabel = (s: DrinkSection) =>
     t.categories[s.categoryKey as keyof Translations['categories']] ?? s.categoryKey;
 
-  // Dynamically generate filter groups by scanning drinkSections
   const filterGroups: FilterGroup[] = useMemo(() => [{
     title: lang === 'de' ? 'Kategorien' : lang === 'it' ? 'Categorie' : 'Categories',
     options: drinkSections.map(s => ({
@@ -349,19 +352,16 @@ export const DrinksScreen: React.FC = () => {
 
   const filteredSections = useMemo(() => {
     let base = drinkSections;
-
     if (activeFilters.length > 0) {
       base = base.filter(s => activeFilters.includes(s.id));
     }
-
     if (!query.trim()) return base;
     const q = query.toLowerCase();
     return base
       .map(s => ({
         ...s,
         items: s.items.filter(
-          item => item.name[lang].toLowerCase().includes(q) ||
-                  item.name.de.toLowerCase().includes(q)
+          item => item.name[lang].toLowerCase().includes(q) || item.name.de.toLowerCase().includes(q)
         ),
       }))
       .filter(s => s.items.length > 0);
@@ -381,10 +381,9 @@ export const DrinksScreen: React.FC = () => {
     }
   };
 
-  // Determine active category from main scroll position
   const handleMainScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (query.trim()) return;
-    const scrollY = e.nativeEvent.contentOffset.y + 60; // offset for pills/header
+    const scrollY = e.nativeEvent.contentOffset.y + 60;
     const ids = Object.keys(sectionYOffsets.current);
     let current = ids[0];
     for (const id of ids) {
@@ -400,26 +399,25 @@ export const DrinksScreen: React.FC = () => {
 
   if (loading && drinkSections.length === 0) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.loadingText}>Lade Getränke…</Text>
+      <View style={[styles.container, styles.centered, { backgroundColor: c.background }]}>
+        <Text style={[styles.loadingText, { color: c.tertiary }]}>Lade Getränke…</Text>
       </View>
     );
   }
 
   return (
-    <Animated.View style={[styles.container, { opacity: screenOpacity }]}>
-      {/* Search bar + filter */}
+    <Animated.View style={[styles.container, { backgroundColor: c.background, opacity: screenOpacity }]}>
       <View style={styles.searchRow}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={16} color={colors.tertiary} />
+        <View style={[styles.searchBar, { backgroundColor: c.cream, borderColor: c.border }]}>
+          <Ionicons name="search" size={16} color={c.tertiary} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: c.primary }]}
             placeholder={
               lang === 'de' ? 'Getränk suchen…'
               : lang === 'it' ? 'Cerca bevanda…'
               : 'Search drinks…'
             }
-            placeholderTextColor={colors.tertiary}
+            placeholderTextColor={c.tertiary}
             value={query}
             onChangeText={setQuery}
             returnKeyType="search"
@@ -427,30 +425,32 @@ export const DrinksScreen: React.FC = () => {
           />
           {query.length > 0 && (
             <Pressable onPress={() => setQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={16} color={colors.tertiary} />
+              <Ionicons name="close-circle" size={16} color={c.tertiary} />
             </Pressable>
           )}
         </View>
 
         <Pressable
-          style={[styles.filterBtn, activeFilters.length > 0 && styles.filterBtnActive]}
+          style={[
+            styles.filterBtn,
+            { backgroundColor: c.cream, borderColor: c.border },
+            activeFilters.length > 0 && { backgroundColor: c.accent, borderColor: c.accent },
+          ]}
           onPress={() => setFilterVisible(true)}
         >
           <Ionicons
             name={activeFilters.length > 0 ? 'funnel' : 'funnel-outline'}
             size={18}
-            color={activeFilters.length > 0 ? colors.white : colors.secondary}
+            color={activeFilters.length > 0 ? c.white : c.secondary}
           />
           {activeFilters.length > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{activeFilters.length}</Text>
+            <View style={[styles.badge, { backgroundColor: c.accentMid, borderColor: c.surface }]}>
+              <Text style={[styles.badgeText, { color: c.white }]}>{activeFilters.length}</Text>
             </View>
           )}
         </Pressable>
       </View>
 
-
-      {/* Main vertical scroll — each category = horizontal carousel */}
       <ScrollView
         ref={mainScrollRef}
         style={styles.mainScroll}
@@ -458,7 +458,7 @@ export const DrinksScreen: React.FC = () => {
         onScroll={handleMainScroll}
         scrollEventThrottle={16}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={c.accent} />
         }
       >
         {filteredSections.map((section, sIdx) => (
@@ -468,15 +468,13 @@ export const DrinksScreen: React.FC = () => {
                 sectionYOffsets.current[section.id] = e.nativeEvent.layout.y;
               }}
             >
-              {/* Section header */}
               <View style={styles.sectionHeader}>
                 {section.icon && (
-                  <Ionicons name={section.icon as any} size={20} color={colors.accent} />
+                  <Ionicons name={section.icon as any} size={20} color={c.accent} />
                 )}
-                <Text style={styles.sectionTitle}>{getCategoryLabel(section)}</Text>
+                <Text style={[styles.sectionTitle, { color: c.primary }]}>{getCategoryLabel(section)}</Text>
               </View>
 
-              {/* Horizontal card row */}
               <FlatList
                 horizontal
                 data={section.items}
@@ -502,11 +500,9 @@ export const DrinksScreen: React.FC = () => {
 
         {filteredSections.length === 0 && (
           <View style={styles.emptyWrap}>
-            <Ionicons name="search-outline" size={40} color={colors.border} />
-            <Text style={styles.emptyText}>
-              {lang === 'de' ? 'Keine Ergebnisse'
-              : lang === 'it' ? 'Nessun risultato'
-              : 'No results'}
+            <Ionicons name="search-outline" size={40} color={c.border} />
+            <Text style={[styles.emptyText, { color: c.tertiary }]}>
+              {lang === 'de' ? 'Keine Ergebnisse' : lang === 'it' ? 'Nessun risultato' : 'No results'}
             </Text>
           </View>
         )}
@@ -536,9 +532,9 @@ export const DrinksScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   centered: { justifyContent: 'center', alignItems: 'center' },
-  loadingText: { ...typography.callout, color: colors.tertiary },
+  loadingText: { ...typography.callout },
 
   searchRow: {
     flexDirection: 'row',
@@ -552,10 +548,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cream,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 9,
     gap: 8,
@@ -563,7 +557,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...typography.callout,
-    color: colors.primary,
     padding: 0,
     margin: 0,
   },
@@ -571,15 +564,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: colors.cream,
     borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  filterBtnActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
   },
   badge: {
     position: 'absolute',
@@ -588,40 +575,16 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.accentMid,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
     borderWidth: 1.5,
-    borderColor: colors.surface,
   },
   badgeText: {
     fontSize: 9,
     fontWeight: '700',
-    color: colors.white,
     lineHeight: 12,
   },
-
-  pillBar: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-  },
-  pillContent: { paddingHorizontal: SIDE_PAD, gap: 8 },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.cream,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pillActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  pillText: { ...typography.caption1, color: colors.secondary, fontWeight: '500' },
-  pillTextActive: { color: colors.white, fontWeight: '600' },
 
   mainScroll: { flex: 1 },
 
@@ -635,7 +598,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.title2,
-    color: colors.primary,
     fontWeight: '800',
   },
 
@@ -645,5 +607,5 @@ const styles = StyleSheet.create({
   },
 
   emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyText: { ...typography.callout, color: colors.tertiary },
+  emptyText: { ...typography.callout },
 });

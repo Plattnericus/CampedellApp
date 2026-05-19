@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, Animated, Image } from 'react-native
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { useLanguage } from '../i18n';
 import { Wine, WineCategory, WINE_CATEGORY_META } from '../data/wines';
@@ -23,6 +23,7 @@ const GRAPE_FULL: Record<string, string> = {
 
 export const WineCard: React.FC<Props> = ({ wine, category, onPress }) => {
   const { lang, t } = useLanguage();
+  const c = useColors();
   const scale = useRef(new Animated.Value(1)).current;
   const bg    = useRef(new Animated.Value(0)).current;
   const meta  = WINE_CATEGORY_META[category];
@@ -33,7 +34,7 @@ export const WineCard: React.FC<Props> = ({ wine, category, onPress }) => {
 
   const handleImageError = () => {
     if (retryCount < 2) {
-      setTimeout(() => setRetryCount(c => c + 1), 1500 * (retryCount + 1));
+      setTimeout(() => setRetryCount(n => n + 1), 1500 * (retryCount + 1));
     } else {
       setImgError(true);
     }
@@ -56,7 +57,7 @@ export const WineCard: React.FC<Props> = ({ wine, category, onPress }) => {
 
   const bgColor = bg.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.surface, colors.accentLight],
+    outputRange: [c.surface, c.accentLight],
   });
 
   const fmt = (p: number) => `${p.toFixed(2).replace('.', ',')} €`;
@@ -70,7 +71,7 @@ export const WineCard: React.FC<Props> = ({ wine, category, onPress }) => {
     : '';
 
   return (
-    <Animated.View style={[styles.cardWrap, { transform: [{ scale }] }]}>
+    <Animated.View style={[styles.cardWrap, { shadowColor: c.primary, transform: [{ scale }] }]}>
       <Animated.View style={[styles.card, { backgroundColor: bgColor }]}>
         <Pressable
           onPress={() => onPress(wine)}
@@ -78,7 +79,6 @@ export const WineCard: React.FC<Props> = ({ wine, category, onPress }) => {
           onPressOut={handlePressOut}
           style={styles.inner}
         >
-          {/* Thumbnail */}
           {remoteUrl && !imgError ? (
             <Image
               key={retryCount}
@@ -98,38 +98,36 @@ export const WineCard: React.FC<Props> = ({ wine, category, onPress }) => {
             </LinearGradient>
           )}
 
-          {/* Text */}
           <View style={styles.mid}>
             <View style={styles.nameRow}>
-              <Text style={styles.name} numberOfLines={1}>{wine.name}</Text>
+              <Text style={[styles.name, { color: c.primary }]} numberOfLines={1}>{wine.name}</Text>
               {wine.isOrganic && (
                 <View style={styles.bioBadge}>
                   <Ionicons name="leaf" size={9} color="#15803d" />
                 </View>
               )}
             </View>
-            <Text style={styles.winery} numberOfLines={1}>{wine.winery}</Text>
+            <Text style={[styles.winery, { color: c.secondary }]} numberOfLines={1}>{wine.winery}</Text>
             {desc ? (
-              <Text style={styles.desc} numberOfLines={2}>{desc}</Text>
+              <Text style={[styles.desc, { color: c.tertiary }]} numberOfLines={2}>{desc}</Text>
             ) : null}
             {wine.grapes && wine.grapes.length > 0 && (
               <View style={styles.grapeRow}>
                 {wine.grapes.slice(0, 3).map((g) => (
-                  <View key={g} style={styles.grapeChip}>
-                    <Text style={styles.grapeText}>{GRAPE_FULL[g] ?? g}</Text>
+                  <View key={g} style={[styles.grapeChip, { backgroundColor: c.accentLight }]}>
+                    <Text style={[styles.grapeText, { color: c.accentDark }]}>{GRAPE_FULL[g] ?? g}</Text>
                   </View>
                 ))}
               </View>
             )}
           </View>
 
-          {/* Price + chevron */}
           <View style={styles.rightCol}>
-            <Text style={styles.price}>{mainPrice}</Text>
+            <Text style={[styles.price, { color: c.accent }]}>{mainPrice}</Text>
             {wine.prices.glass && wine.prices.bottle && (
-              <Text style={styles.priceSub}>{fmt(wine.prices.glass)} Glas</Text>
+              <Text style={[styles.priceSub, { color: c.accentDark }]}>{fmt(wine.prices.glass)} Glas</Text>
             )}
-            <Ionicons name="chevron-forward" size={14} color={colors.border} style={styles.chevron} />
+            <Ionicons name="chevron-forward" size={14} color={c.border} style={styles.chevron} />
           </View>
         </Pressable>
       </Animated.View>
@@ -142,14 +140,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginBottom: 10,
     borderRadius: 18,
-    shadowColor: colors.primary,
     shadowOpacity: 0.07,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
     elevation: 2,
   },
   card: {
-    backgroundColor: colors.surface,
     borderRadius: 18,
     overflow: 'hidden',
   },
@@ -183,7 +179,6 @@ const styles = StyleSheet.create({
   },
   name: {
     ...typography.callout,
-    color: colors.primary,
     fontWeight: '600',
     flex: 1,
   },
@@ -197,13 +192,11 @@ const styles = StyleSheet.create({
   },
   winery: {
     ...typography.caption1,
-    color: colors.secondary,
     fontWeight: '500',
     marginBottom: 3,
   },
   desc: {
     ...typography.caption1,
-    color: colors.tertiary,
     lineHeight: 17,
     marginBottom: 4,
   },
@@ -213,14 +206,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   grapeChip: {
-    backgroundColor: colors.accentLight,
     borderRadius: 5,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   grapeText: {
     ...typography.caption2,
-    color: colors.accentDark,
     fontWeight: '600',
   },
   rightCol: {
@@ -230,12 +221,10 @@ const styles = StyleSheet.create({
   },
   price: {
     ...typography.subheadline,
-    color: colors.accent,
     fontWeight: '700',
   },
   priceSub: {
     ...typography.caption1,
-    color: colors.accentDark,
     fontWeight: '500',
   },
   chevron: {

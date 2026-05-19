@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme as NavDarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +14,9 @@ import { DrinksScreen } from '../screens/DrinksScreen';
 import { WinesScreen } from '../screens/WinesScreen';
 import { CampedelLogo } from '../components/CampedelLogo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { colors } from '../theme/colors';
+import { ThemeSwitcher } from '../components/ThemeSwitcher';
+import { useColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 import { useLanguage } from '../i18n';
 
@@ -30,21 +32,19 @@ const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> 
   Wines:  { active: 'wine',                 inactive: 'wine-outline' },
 };
 
-// ── Custom header: logo links (gross), Sprachauswahl exakt zentriert ──
 function AppHeader() {
   const insets = useSafeAreaInsets();
-  return (
-    <View style={{ backgroundColor: colors.background }}>
-      {/* Status bar spacer */}
-      <View style={{ height: insets.top }} />
+  const c = useColors();
 
-      {/* Navigation bar */}
-      <View style={styles.navBar}>
-        {/* Logo — links, gross */}
+  return (
+    <View style={{ backgroundColor: c.background }}>
+      <View style={{ height: insets.top }} />
+      <View style={[styles.navBar, { backgroundColor: c.background }]}>
+        {/* Logo — links, größer */}
         <CampedelLogo
-          size={54}
-          color={colors.primary}
-          bgColor={colors.background}
+          size={66}
+          color={c.primary}
+          bgColor={c.background}
           showText={true}
         />
 
@@ -55,22 +55,29 @@ function AppHeader() {
         >
           <LanguageSwitcher />
         </View>
+
+        {/* Theme Switcher — rechts oben */}
+        <View style={styles.rightActions}>
+          <ThemeSwitcher />
+        </View>
       </View>
 
-      <View style={styles.headerBorder} />
+      <View style={[styles.headerBorder, { backgroundColor: c.borderLight }]} />
     </View>
   );
 }
 
 function MainTabs() {
   const { t } = useLanguage();
+  const c = useColors();
+  const { isDark } = useTheme();
 
   return (
     <Tab.Navigator
+      sceneContainerStyle={{ backgroundColor: c.background }}
       screenOptions={({ route }) => ({
         header: () => <AppHeader />,
 
-        // Tab bar
         tabBarIcon: ({ focused, color, size }) => {
           const icons = TAB_ICONS[route.name];
           return (
@@ -81,17 +88,23 @@ function MainTabs() {
             />
           );
         },
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.tertiary,
+        tabBarActiveTintColor: c.accent,
+        tabBarInactiveTintColor: c.tertiary,
         tabBarStyle: {
           position: 'absolute',
           borderTopWidth: 1,
-          borderTopColor: colors.borderLight,
-          backgroundColor: Platform.OS === 'ios' ? 'transparent' : colors.surface,
+          borderTopColor: c.borderLight,
+          backgroundColor: Platform.OS === 'ios' ? 'transparent' : c.surface,
           elevation: 0,
         },
         tabBarBackground: Platform.OS === 'ios'
-          ? () => <BlurView intensity={75} tint="light" style={StyleSheet.absoluteFillObject} />
+          ? () => (
+              <BlurView
+                intensity={75}
+                tint={isDark ? 'dark' : 'light'}
+                style={StyleSheet.absoluteFillObject}
+              />
+            )
           : undefined,
         tabBarLabelStyle: {
           ...typography.caption2,
@@ -110,9 +123,34 @@ function MainTabs() {
 }
 
 export function AppNavigator() {
+  const { isDark } = useTheme();
+  const c = useColors();
+
+  const CustomDarkTheme = {
+    ...NavDarkTheme,
+    colors: {
+      ...NavDarkTheme.colors,
+      background: c.background,
+      card: c.surface,
+      text: c.text,
+      border: c.borderLight,
+    },
+  };
+
+  const CustomLightTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: c.background,
+      card: c.surface,
+      text: c.text,
+      border: c.borderLight,
+    },
+  };
+
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <NavigationContainer theme={isDark ? CustomDarkTheme : CustomLightTheme}>
+      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.background } }}>
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Main"   component={MainTabs} />
       </Stack.Navigator>
@@ -122,11 +160,11 @@ export function AppNavigator() {
 
 const styles = StyleSheet.create({
   navBar: {
-    height: 60,
-    paddingHorizontal: 20,
+    height: 64,
+    paddingLeft: 0,
+    paddingRight: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
     position: 'relative',
   },
   langCenter: {
@@ -136,6 +174,8 @@ const styles = StyleSheet.create({
   },
   headerBorder: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.borderLight,
+  },
+  rightActions: {
+    marginLeft: 'auto',
   },
 });

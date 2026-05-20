@@ -8,43 +8,31 @@ import { useColors } from '../theme/colors';
 export const ThemeSwitcher: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
   const c = useColors();
-
-  const rotation = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePress = (e: GestureResponderEvent) => {
     Haptics.selectionAsync();
-
-    // Get click position for the root mask animation
     const { pageX, pageY } = e.nativeEvent;
-    
-    // Trigger global snapshot mask transition - No cooldown!
+
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 0.78, duration: 70, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, tension: 220, friction: 7 }),
+    ]).start();
+
     toggleTheme(pageX, pageY);
-
-    // Smooth icon rotation
-    Animated.timing(rotation, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start(() => rotation.setValue(0));
   };
-
-  const rotate = rotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
 
   return (
     <Pressable
       onPress={handlePress}
       style={[styles.btn, { backgroundColor: c.cream }]}
-      hitSlop={6}
+      hitSlop={8}
     >
-      <Animated.View style={{ transform: [{ rotate }, { scale }] }}>
+      <Animated.View style={{ transform: [{ scale }] }}>
         <Ionicons
-          name={isDark ? 'moon' : 'sunny'}
-          size={18}
-          color={isDark ? '#e8d8b0' : '#4A3828'}
+          name="contrast"
+          size={19}
+          color={isDark ? '#F0D060' : '#4A3828'}
         />
       </Animated.View>
     </Pressable>

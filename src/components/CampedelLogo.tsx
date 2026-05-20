@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, StyleSheet, Image, Animated } from 'react-native';
 import Svg, { Polygon } from 'react-native-svg';
 import { lightColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 interface Props {
   size?: number;
@@ -12,7 +13,8 @@ interface Props {
 
 const BLADE = "-2,-27 2,-27 9,-21 9,21 2,27 -2,27 -9,21 -9,-21";
 
-const logoSource = require('../../assets/logo.png');
+const logoLight = require('../../assets/logo.png');
+const logoDark  = require('../../assets/logo-white.png');
 
 const CampedelLogoInner: React.FC<Props> = ({
   size = 80,
@@ -20,14 +22,30 @@ const CampedelLogoInner: React.FC<Props> = ({
   bgColor = lightColors.background,
   showText = true,
 }) => {
+  const { isDark } = useTheme();
+  const darkOpacity = useRef(new Animated.Value(isDark ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(darkOpacity, {
+      toValue: isDark ? 1 : 0,
+      duration: 320,
+      useNativeDriver: true,
+    }).start();
+  }, [isDark]);
+
   if (showText) {
     const imgW = size * 1.83;
     const imgH = size;
     return (
-      <View style={[styles.wrapper, { backgroundColor: bgColor }]}>
+      <View style={[styles.wrapper, { backgroundColor: bgColor, width: imgW, height: imgH, overflow: 'hidden' }]}>
         <Image
-          source={logoSource}
+          source={logoLight}
           style={{ width: imgW, height: imgH }}
+          resizeMode="contain"
+        />
+        <Animated.Image
+          source={logoDark}
+          style={{ width: imgW, height: imgH, position: 'absolute', top: 0, left: 0, opacity: darkOpacity }}
           resizeMode="contain"
         />
       </View>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, Animated, Easing, StyleSheet, Image, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ViewShot from 'react-native-view-shot';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -19,7 +19,6 @@ const STORAGE_KEY = 'campedel_theme';
 const { width, height } = Dimensions.get('window');
 const MAX_RADIUS = Math.sqrt(width * width + height * height) + 50;
 
-// Altes Wave Design: Perfekt glatter, nativer SVG Kreis
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 type SnapshotLayer = {
@@ -47,37 +46,34 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const uri = await viewShotRef.current?.capture?.();
       if (!uri) return;
 
-      // Wir sichern die ALTE Farbe für den Bruchteil einer Sekunde
       const oldBg = isDark ? '#1A1208' : '#FAF6F1';
 
-      // 1. SOFORT Umschalten. KEIN Timeout = absolut responsive und spamable!
       setIsDark((prev) => {
         const next = !prev;
         AsyncStorage.setItem(STORAGE_KEY, next ? 'dark' : 'light');
         return next;
       });
 
+      const anim = new Animated.Value(0);
       const newLayer: SnapshotLayer = {
-        id: Math.random().toString(36),
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
         uri,
         x,
         y,
-        anim: new Animated.Value(0),
+        anim,
         oldBg,
       };
 
-      // 2. Layer drunterlegen für richtiges Stacking beim Spammen (neu unter alt)
       setLayers((prev) => [newLayer, ...prev]);
 
-      // 3. Animation SOFORT starten, die Vektorkurven wachsen sauber und pixelperfekt aus
-      Animated.timing(newLayer.anim, {
+      Animated.timing(anim, {
         toValue: MAX_RADIUS,
-        duration: 650,
-        useNativeDriver: false, // Erlaubt perfekten SVG Kreis!
+        duration: 480,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: false,
       }).start(() => {
         setLayers((prev) => prev.filter((l) => l.id !== newLayer.id));
       });
-
     } catch (e) {
       console.warn('Mask transition failed', e);
       setIsDark((prev) => !prev);
@@ -86,9 +82,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>
-      {/* Root Background verhindert Black-Screen Flashes */}
       <View style={{ flex: 1, backgroundColor: isDark ? '#1A1208' : '#FAF6F1' }}>
-        <ViewShot ref={viewShotRef} style={{ flex: 1 }} options={{ format: 'jpg', quality: 0.6 }}>
+        <ViewShot ref={viewShotRef} style={{ flex: 1 }} options={{ format: 'jpg', quality: 0.78 }}>
           {children}
         </ViewShot>
 
@@ -109,17 +104,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   </Svg>
                 }
               >
-                {/* 
-                  DER ANTI-FLICKER TRICK:
-                  Anstatt ein setTimeout() zu haben (was die App hart laggy machte),
-                  fängt dieses 'backgroundColor' die 1-2 Frames dauernde JPG-Ladezeit ab.
-                  Es füllt das noch leere Snapshot-Image kurz mit der alten Theme-Farbe.
-                  Dadurch "blitzt" der neue Theme nicht vorzeitig auf = 100% sauberer Übergang instant!
-                */}
-                <Image 
-                  source={{ uri: layer.uri }} 
-                  style={[StyleSheet.absoluteFillObject, { backgroundColor: layer.oldBg }]} 
-                  fadeDuration={0} 
+                <Image
+                  source={{ uri: layer.uri }}
+                  style={[StyleSheet.absoluteFillObject, { backgroundColor: layer.oldBg }]}
+                  fadeDuration={0}
                 />
               </MaskedView>
             </View>

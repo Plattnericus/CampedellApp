@@ -5,6 +5,7 @@ export const lightColors = {
   surface:    '#FFFFFF',
   cream:      '#F2EAE0',
   creamDark:  '#E5D7CA',
+  shadow:     '#1A1208',
 
   accent:      '#7EA13B',
   accentLight: '#EEF5DC',
@@ -31,6 +32,7 @@ export const darkColors = {
   surface:    '#251A0C',
   cream:      '#2E2010',
   creamDark:  '#3A2A1A',
+  shadow:     'transparent',
 
   accent:      '#90BC40',
   accentLight: '#243210',

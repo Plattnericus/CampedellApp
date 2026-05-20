@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CampedelLogo } from '../components/CampedelLogo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import { useLanguage } from '../i18n';
 import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
@@ -48,6 +49,9 @@ export const SplashScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <Animated.View style={[styles.container, { backgroundColor: c.background, opacity: screenOpacity }]}>
+      <View style={styles.topRight}>
+        <ThemeSwitcher />
+      </View>
       <Animated.View
         style={[styles.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}
       >
@@ -110,5 +114,10 @@ const styles = StyleSheet.create({
   },
   langWrap: {
     marginTop: 36,
+  },
+  topRight: {
+    position: 'absolute',
+    top: 56,
+    right: 20,
   },
 });

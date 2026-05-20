@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet, Image, Animated } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
 import Svg, { Polygon } from 'react-native-svg';
 import { lightColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
@@ -13,8 +13,8 @@ interface Props {
 
 const BLADE = "-2,-27 2,-27 9,-21 9,21 2,27 -2,27 -9,21 -9,-21";
 
-const logoLight = require('../../assets/logo.png');
-const logoDark  = require('../../assets/logo-white.png');
+const logoBlack = require('../../assets/logo.png');
+const logoWhite = require('../../assets/logo-white.png');
 
 const CampedelLogoInner: React.FC<Props> = ({
   size = 80,
@@ -23,29 +23,39 @@ const CampedelLogoInner: React.FC<Props> = ({
   showText = true,
 }) => {
   const { isDark } = useTheme();
-  const darkOpacity = useRef(new Animated.Value(isDark ? 1 : 0)).current;
+
+  // Crossfade: black fades out while white fades in — never both fully visible
+  const blackOpacity = useRef(new Animated.Value(isDark ? 0 : 1)).current;
+  const whiteOpacity = useRef(new Animated.Value(isDark ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.timing(darkOpacity, {
-      toValue: isDark ? 1 : 0,
-      duration: 320,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(blackOpacity, {
+        toValue: isDark ? 0 : 1,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+      Animated.timing(whiteOpacity, {
+        toValue: isDark ? 1 : 0,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, [isDark]);
 
   if (showText) {
     const imgW = size * 1.83;
     const imgH = size;
     return (
-      <View style={[styles.wrapper, { backgroundColor: bgColor, width: imgW, height: imgH, overflow: 'hidden' }]}>
-        <Image
-          source={logoLight}
-          style={{ width: imgW, height: imgH }}
+      <View style={{ width: imgW, height: imgH }}>
+        <Animated.Image
+          source={logoBlack}
+          style={{ width: imgW, height: imgH, opacity: blackOpacity }}
           resizeMode="contain"
         />
         <Animated.Image
-          source={logoDark}
-          style={{ width: imgW, height: imgH, position: 'absolute', top: 0, left: 0, opacity: darkOpacity }}
+          source={logoWhite}
+          style={[StyleSheet.absoluteFillObject, { width: imgW, height: imgH, opacity: whiteOpacity }]}
           resizeMode="contain"
         />
       </View>
@@ -73,9 +83,4 @@ const CampedelLogoInner: React.FC<Props> = ({
 
 export const CampedelLogo = React.memo(CampedelLogoInner);
 
-const styles = StyleSheet.create({
-  wrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const styles = StyleSheet.create({});

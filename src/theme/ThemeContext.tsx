@@ -19,7 +19,6 @@ const STORAGE_KEY = 'campedel_theme';
 const { width, height } = Dimensions.get('window');
 const MAX_RADIUS = Math.sqrt(width * width + height * height) + 50;
 
-// Created once outside component — never recreated
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 type SnapshotLayer = {
@@ -39,8 +38,8 @@ const MaskLayer = ({ layer, onRemove }: {
   useEffect(() => {
     Animated.timing(anim, {
       toValue: MAX_RADIUS,
-      duration: 500,
-      easing: Easing.out(Easing.quad),
+      duration: 820,
+      easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start(({ finished }) => {
       if (finished) onRemove(layer.id);
@@ -76,18 +75,50 @@ const MaskLayer = ({ layer, onRemove }: {
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
   const [layers, setLayers] = useState<SnapshotLayer[]>([]);
+  const [rootBg, setRootBg] = useState('#FAF6F1');
   const viewShotRef = useRef<ViewShot>(null);
   const isDarkRef = useRef(isDark);
 
+  const cachedUri = useRef<string | null>(null);
+  const captureScheduled = useRef(false);
+
+  useEffect(() => { isDarkRef.current = isDark; }, [isDark]);
+
+  // rootBg only updates when no layer is animating — prevents white flash
   useEffect(() => {
-    isDarkRef.current = isDark;
-  }, [isDark]);
+    if (layers.length === 0) {
+      setRootBg(isDark ? '#1A1208' : '#FAF6F1');
+    }
+  }, [isDark, layers]);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((val) => {
-      if (val === 'dark') setIsDark(true);
+      if (val === 'dark') {
+        setIsDark(true);
+        setRootBg('#1A1208');
+      }
     });
   }, []);
+
+  // Pre-capture: screenshot ready before next tap, zero animation delay
+  const schedulePreCapture = useCallback(() => {
+    if (captureScheduled.current) return;
+    captureScheduled.current = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(async () => {
+        try {
+          const uri = await viewShotRef.current?.capture?.();
+          if (uri) cachedUri.current = uri;
+        } catch {}
+        captureScheduled.current = false;
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(schedulePreCapture, 600);
+    return () => clearTimeout(t);
+  }, [schedulePreCapture]);
 
   const removeLayer = useCallback((id: string) => {
     setLayers((prev) => prev.filter((l) => l.id !== id));
@@ -95,7 +126,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const toggleTheme = useCallback(async (x: number = 0, y: number = 0) => {
     try {
-      const uri = await viewShotRef.current?.capture?.();
+      let uri = cachedUri.current;
+      cachedUri.current = null;
+
+      if (!uri) {
+        uri = (await viewShotRef.current?.capture?.()) ?? null;
+      }
       if (!uri) return;
 
       const oldBg = isDarkRef.current ? '#1A1208' : '#FAF6F1';
@@ -116,16 +152,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         },
         ...prev,
       ]);
+
+      // Delay pre-capture until animation finishes to avoid JS thread contention
+      setTimeout(schedulePreCapture, 720);
     } catch (e) {
       console.warn('Mask transition failed', e);
       setIsDark((prev) => !prev);
     }
-  }, []);
+  }, [schedulePreCapture]);
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>
-      <View style={{ flex: 1, backgroundColor: isDark ? '#1A1208' : '#FAF6F1' }}>
-        <ViewShot ref={viewShotRef} style={{ flex: 1 }} options={{ format: 'jpg', quality: 0.75 }}>
+      <View style={{ flex: 1, backgroundColor: rootBg }}>
+        <ViewShot
+          ref={viewShotRef}
+          style={{ flex: 1 }}
+          options={{ format: 'jpg', quality: 0.75, result: 'tmpfile' }}
+        >
           {children}
         </ViewShot>
 

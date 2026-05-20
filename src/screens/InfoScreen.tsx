@@ -28,7 +28,7 @@ export const InfoScreen: React.FC = () => {
         </LinearGradient>
       </FadeInView>
 
-      <FadeInView delay={120} style={[styles.quoteCard, { backgroundColor: c.surface, shadowColor: c.primary }]}>
+      <FadeInView delay={120} style={[styles.quoteCard, { backgroundColor: c.surface, shadowColor: c.shadow }]}>
         <Text style={[styles.quote, { color: c.secondary }]}>"{t.info.quote}"</Text>
         <Text style={[styles.quoteAuthor, { color: c.tertiary }]}>– {t.info.quoteAuthor}</Text>
       </FadeInView>
@@ -38,7 +38,7 @@ export const InfoScreen: React.FC = () => {
         <Text style={[styles.body, { color: c.secondary }]}>{t.info.description}</Text>
       </FadeInView>
 
-      <FadeInView delay={340} style={[styles.contactCard, { backgroundColor: c.surface, shadowColor: c.primary }]}>
+      <FadeInView delay={340} style={[styles.contactCard, { backgroundColor: c.surface, shadowColor: c.shadow }]}>
         <View style={styles.contactRow}>
           <View style={[styles.iconWrap, { backgroundColor: c.accent }]}>
             <Ionicons name="location" size={16} color={c.white} />

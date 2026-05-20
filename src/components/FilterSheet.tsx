@@ -128,7 +128,7 @@ export const FilterSheet: React.FC<Props> = ({
         <Animated.View
           style={[
             styles.sheet,
-            { backgroundColor: c.surface, shadowColor: c.primary, transform: [{ translateY }] },
+            { backgroundColor: c.surface, shadowColor: c.shadow, transform: [{ translateY }] },
           ]}
         >
           <View style={styles.handleArea}>

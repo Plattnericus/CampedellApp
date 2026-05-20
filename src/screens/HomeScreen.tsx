@@ -239,7 +239,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         }
       >
         <FadeInView duration={500}>
-          <View style={[styles.heroWrap, { shadowColor: c.primary }]}>
+          <View style={[styles.heroWrap, { shadowColor: c.shadow }]}>
             <HeroSlideshow>
               <Text style={styles.heroTitle}>{w.title}</Text>
               <Text style={styles.heroSub}>{w.sub}</Text>
@@ -260,7 +260,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               <Pressable
                 style={({ pressed }) => [
                   styles.menuCard,
-                  { backgroundColor: c.surface, shadowColor: c.primary },
+                  { backgroundColor: c.surface, shadowColor: c.shadow },
                   pressed && styles.menuCardPressed,
                 ]}
                 onPress={() => navigation.navigate(card.tab)}

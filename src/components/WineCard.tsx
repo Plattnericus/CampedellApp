@@ -71,7 +71,7 @@ export const WineCard: React.FC<Props> = ({ wine, category, onPress }) => {
     : '';
 
   return (
-    <Animated.View style={[styles.cardWrap, { shadowColor: c.primary, transform: [{ scale }] }]}>
+    <Animated.View style={[styles.cardWrap, { shadowColor: c.shadow, transform: [{ scale }] }]}>
       <Animated.View style={[styles.card, { backgroundColor: bgColor }]}>
         <Pressable
           onPress={() => onPress(wine)}

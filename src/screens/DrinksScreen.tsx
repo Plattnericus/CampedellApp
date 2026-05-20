@@ -125,7 +125,7 @@ const DrinkDetailSheet: React.FC<DetailProps> = ({ item, sectionIcon, visible, o
           <Animated.View
             style={[
               detailStyles.sheet,
-              { backgroundColor: c.surface, shadowColor: c.primary, transform: [{ translateY }] },
+              { backgroundColor: c.surface, shadowColor: c.shadow, transform: [{ translateY }] },
             ]}
           >
             <View style={detailStyles.handleArea}>
@@ -249,7 +249,7 @@ const DrinkCard: React.FC<DrinkCardProps> = ({ item, sectionIcon, onPress }) => 
 
   return (
     <Pressable
-      style={[cardStyles.card, { backgroundColor: c.surface, shadowColor: c.primary }]}
+      style={[cardStyles.card, { backgroundColor: c.surface, shadowColor: c.shadow }]}
       onPress={() => onPress(item)}
     >
       {item.imageUrl && !imgError ? (

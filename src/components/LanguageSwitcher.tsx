@@ -48,7 +48,7 @@ export const LanguageSwitcher: React.FC = () => {
           styles.pill,
           {
             backgroundColor: c.accent,
-            shadowColor: c.accent,
+            shadowColor: c.shadow,
             transform: [
               { translateX: pillX },
               { scale: pillScale },

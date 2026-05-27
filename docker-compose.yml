@@ -1,0 +1,10 @@
+services:
+  campedellapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+    restart: unless-stopped

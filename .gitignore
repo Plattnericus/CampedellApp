@@ -13,6 +13,9 @@ expo-env.d.ts
 ios/
 android/
 
+# Cloudflare tunnel credentials
+.cloudflared/
+
 # Environment variables
 .env
 .env.local

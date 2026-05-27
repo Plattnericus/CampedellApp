@@ -9,3 +9,12 @@ services:
       - PORT=3004
       - EXPO_NO_DOTENV=1
     restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./.cloudflared:/etc/cloudflared
+    depends_on:
+      - campedellapp

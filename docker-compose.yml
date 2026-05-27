@@ -7,4 +7,6 @@ services:
       - "3004:3004"
     environment:
       - PORT=3004
+      - HOST=0.0.0.0
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
     restart: unless-stopped

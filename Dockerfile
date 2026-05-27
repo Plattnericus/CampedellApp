@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 3004
 
-CMD ["npx", "expo", "start", "--web", "--port", "3004", "--host", "0.0.0.0"]
+CMD ["npx", "expo", "start", "--web", "--port", "3004", "--host", "lan"]
